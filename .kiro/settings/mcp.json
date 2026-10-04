@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "glucotwin-mcp": {
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/mcp-server/glucotwin_mcp_server.py"
+      ],
+      "disabled": false,
+      "description": "GlucoTwin AI read-only MCP server. Exposes synthetic Digital Twin tools for the doctor decision-support dashboard. All data is SYNTHETIC — no real patient information, no database, no external APIs."
+    }
+  }
+}
