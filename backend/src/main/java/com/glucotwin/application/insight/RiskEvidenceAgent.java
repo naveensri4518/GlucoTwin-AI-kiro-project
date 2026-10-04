@@ -1,12 +1,14 @@
 package com.glucotwin.application.insight;
 
 import com.glucotwin.domain.insight.AgentResult;
+import com.glucotwin.domain.insight.ClinicalKnowledgeEvidence;
+import com.glucotwin.domain.insight.ClinicalKnowledgeRetriever;
 import com.glucotwin.domain.insight.EvidenceAggregationResult;
 import com.glucotwin.domain.insight.PredictionAnalysisResult;
 import com.glucotwin.domain.insight.TwinAnalysisResult;
 import com.glucotwin.domain.prediction.ContributingFactor;
-import com.glucotwin.domain.prediction.RiskCategory;
 import com.glucotwin.domain.twin.TwinStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -14,26 +16,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Combines OBSERVED Twin signals and PREDICTED risk evidence into a structured summary.
+ * Combines OBSERVED Twin signals and PREDICTED risk evidence into a structured summary,
+ * and (Phase 9) retrieves supporting general clinical knowledge via
+ * {@link ClinicalKnowledgeRetriever}.
  *
  * <p>Safety constraints — this agent:
  * <ul>
  *   <li>Never diagnoses disease.
  *   <li>Never prescribes medication or recommends dosage changes.
  *   <li>Never presents SIMULATED data as OBSERVED or PREDICTED.
+ *   <li>Never mixes patient data with retrieved knowledge — provenance labels are kept distinct.
  *   <li>Clearly states when evidence is incomplete.
  *   <li>Does not fabricate observations or predictions.
+ *   <li>If knowledge retrieval returns nothing, proceeds without failing.
  * </ul>
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class RiskEvidenceAgent {
 
     static final String AGENT_NAME = "RiskEvidenceAgent";
 
+    /** Maximum number of knowledge items to attach per insight. */
+    static final int MAX_KNOWLEDGE_ITEMS = 3;
+
+    private final ClinicalKnowledgeRetriever knowledgeRetriever;
+
     /**
-     * Aggregate evidence from twin analysis and prediction analysis.
-     * Both inputs are required; returns failure if either is absent.
+     * Aggregate evidence from twin analysis and prediction analysis,
+     * and retrieve supporting general clinical knowledge for the identified risk factors.
      */
     public AgentResult<EvidenceAggregationResult> aggregate(
             TwinAnalysisResult twinResult,
@@ -53,16 +65,29 @@ public class RiskEvidenceAgent {
             String evidenceSummary = buildEvidenceSummary(twinResult, predResult);
             String uncertainty     = buildUncertaintyStatement(twinResult, predResult, warnings);
 
+            // ── Phase 9: Retrieve clinical knowledge ─────────────────────────
+            // Topics are derived from contributing factor names + any observed signal names.
+            // Patient-specific values are never passed to the retriever.
+            List<String> topics = buildRetrievalTopics(twinResult, predResult);
+            List<ClinicalKnowledgeEvidence> knowledge = List.of();
+            try {
+                knowledge = knowledgeRetriever.retrieve(topics, MAX_KNOWLEDGE_ITEMS);
+            } catch (Exception ex) {
+                // Knowledge retrieval failure must NOT block insight generation
+                log.warn("[{}] Knowledge retrieval failed (non-fatal): {}", AGENT_NAME, ex.getMessage());
+            }
+
             EvidenceAggregationResult result = new EvidenceAggregationResult(
                     predResult.riskCategory(),
                     strongestFactors,
                     evidenceSummary,
                     uncertainty,
-                    warnings);
+                    warnings,
+                    knowledge);
 
-            log.debug("[{}] Evidence aggregated — risk={}, factors={}, warnings={}",
+            log.debug("[{}] Evidence aggregated — risk={}, factors={}, warnings={}, knowledge={}",
                     AGENT_NAME, predResult.riskCategory(),
-                    strongestFactors.size(), warnings.size());
+                    strongestFactors.size(), warnings.size(), knowledge.size());
 
             return AgentResult.success(result);
 
@@ -74,6 +99,26 @@ public class RiskEvidenceAgent {
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Derive retrieval topics from contributing factor names and observed signal names.
+     * Only structural feature names are used — patient-specific values are never included.
+     */
+    private List<String> buildRetrievalTopics(TwinAnalysisResult twin,
+                                               PredictionAnalysisResult pred) {
+        List<String> topics = new ArrayList<>();
+        // Factor names (e.g. "cgm_current", "hba1c_latest", "step_count_today")
+        pred.topContributingFactors().stream()
+                .limit(5)
+                .map(ContributingFactor::factorName)
+                .forEach(topics::add);
+        // Observed signal names (structural, not values)
+        twin.keyObservedSignals().stream()
+                .map(s -> s.name())
+                .limit(5)
+                .forEach(topics::add);
+        return List.copyOf(topics);
+    }
 
     private String buildEvidenceSummary(TwinAnalysisResult twin,
                                         PredictionAnalysisResult pred) {

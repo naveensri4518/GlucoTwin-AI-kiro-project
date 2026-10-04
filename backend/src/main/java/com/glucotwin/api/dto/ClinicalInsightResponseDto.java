@@ -2,8 +2,7 @@ package com.glucotwin.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.glucotwin.domain.insight.ClinicalInsightResponse;
-import com.glucotwin.domain.insight.ObservedSignal;
-import com.glucotwin.domain.prediction.ContributingFactor;
+import com.glucotwin.domain.insight.ClinicalKnowledgeEvidence;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,10 +11,14 @@ import java.util.UUID;
 /**
  * REST response DTO for POST /api/v1/patients/{patientId}/clinical-insights.
  *
- * Provenance rules mirrored from the domain:
- * - keyObservedSignals  → each carries provenance=OBSERVED
- * - spikeProbability / riskCategory / confidenceInterval → dataProvenance=OBSERVED+PREDICTED
- * - safetyDisclaimer is always present
+ * Provenance rules:
+ * - keyObservedSignals        → each carries provenance=OBSERVED
+ * - spikeProbability etc.     → dataProvenance=OBSERVED+PREDICTED
+ * - clinicalKnowledgeEvidence → each carries provenance=CLINICAL_KNOWLEDGE (Phase 9)
+ * - safetyDisclaimer          → always present
+ *
+ * Phase 9: clinicalKnowledgeEvidence is an additive field.
+ * Existing API consumers that do not read it are unaffected.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ClinicalInsightResponseDto(
@@ -32,7 +35,9 @@ public record ClinicalInsightResponseDto(
         String evidenceSummary,
         String uncertainty,
         String dataProvenance,
-        String safetyDisclaimer) {
+        String safetyDisclaimer,
+        /** Phase 9: general clinical knowledge evidence for the identified risk factors. */
+        List<ClinicalKnowledgeEvidenceDto> clinicalKnowledgeEvidence) {
 
     // ── Nested DTOs ───────────────────────────────────────────────────────────
 
@@ -42,6 +47,20 @@ public record ClinicalInsightResponseDto(
 
     public record ContributingFactorDto(
             String factorName, double contribution, String direction) {}
+
+    /**
+     * Phase 9 DTO for a single clinical knowledge evidence item.
+     * provenance is always "CLINICAL_KNOWLEDGE".
+     */
+    public record ClinicalKnowledgeEvidenceDto(
+            String knowledgeId,
+            String title,
+            String sourceName,
+            String sourceReference,
+            String version,
+            String topic,
+            String excerpt,
+            String provenance) {}
 
     // ── Factory ───────────────────────────────────────────────────────────────
 
@@ -60,6 +79,12 @@ public record ClinicalInsightResponseDto(
                         f.factorName(), f.contribution(), f.direction().name()))
                 .toList();
 
+        List<ClinicalKnowledgeEvidenceDto> knowledge = domain.clinicalKnowledgeEvidence().stream()
+                .map(k -> new ClinicalKnowledgeEvidenceDto(
+                        k.knowledgeId(), k.title(), k.sourceName(), k.sourceReference(),
+                        k.version(), k.topic(), k.excerpt(), k.provenance()))
+                .toList();
+
         return new ClinicalInsightResponseDto(
                 domain.patientId(),
                 domain.generatedAt(),
@@ -74,6 +99,7 @@ public record ClinicalInsightResponseDto(
                 domain.evidenceSummary(),
                 domain.uncertainty(),
                 domain.dataProvenance(),
-                domain.safetyDisclaimer());
+                domain.safetyDisclaimer(),
+                knowledge);
     }
 }

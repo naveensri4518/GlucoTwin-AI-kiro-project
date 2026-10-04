@@ -16,8 +16,12 @@ import java.util.UUID;
  * <ul>
  *   <li>keyObservedSignals — all OBSERVED
  *   <li>spikeProbability / riskCategory / confidenceInterval — PREDICTED
- *   <li>No SIMULATED data is ever included in a ClinicalInsightResponse
+ *   <li>clinicalKnowledgeEvidence — all CLINICAL_KNOWLEDGE (Phase 9, may be empty)
+ *   <li>No SIMULATED data is ever included
  * </ul>
+ *
+ * <p>Phase 9 addition: {@code clinicalKnowledgeEvidence} is additive and optional —
+ * existing API consumers that do not read this field are unaffected.
  *
  * <p>This is clinical decision support — not a diagnosis or medical recommendation.
  */
@@ -35,7 +39,9 @@ public record ClinicalInsightResponse(
         String evidenceSummary,
         String uncertainty,
         String dataProvenance,
-        String safetyDisclaimer) {
+        String safetyDisclaimer,
+        /** Phase 9: retrieved general clinical knowledge evidence. Never null; may be empty. */
+        List<ClinicalKnowledgeEvidence> clinicalKnowledgeEvidence) {
 
     public static final String SAFETY_DISCLAIMER =
             "This is clinical decision support, not a diagnosis or medical recommendation. "
@@ -49,12 +55,21 @@ public record ClinicalInsightResponse(
         Objects.requireNonNull(riskCategory);
         Objects.requireNonNull(evidenceSummary);
         Objects.requireNonNull(safetyDisclaimer);
-        keyObservedSignals   = keyObservedSignals   != null ? List.copyOf(keyObservedSignals)   : List.of();
-        contributingFactors  = contributingFactors  != null ? List.copyOf(contributingFactors)  : List.of();
-        dataQualityWarnings  = dataQualityWarnings  != null ? List.copyOf(dataQualityWarnings)  : List.of();
+        keyObservedSignals        = keyObservedSignals        != null ? List.copyOf(keyObservedSignals)        : List.of();
+        contributingFactors       = contributingFactors       != null ? List.copyOf(contributingFactors)       : List.of();
+        dataQualityWarnings       = dataQualityWarnings       != null ? List.copyOf(dataQualityWarnings)       : List.of();
+        clinicalKnowledgeEvidence = clinicalKnowledgeEvidence != null ? List.copyOf(clinicalKnowledgeEvidence) : List.of();
         if (!SAFETY_DISCLAIMER.equals(safetyDisclaimer)) {
             throw new IllegalArgumentException(
                     "Safety disclaimer must match the canonical text");
+        }
+        // Enforce CLINICAL_KNOWLEDGE provenance on all knowledge items
+        for (ClinicalKnowledgeEvidence item : clinicalKnowledgeEvidence) {
+            if (!ClinicalKnowledgeEvidence.PROVENANCE_CLINICAL_KNOWLEDGE.equals(item.provenance())) {
+                throw new IllegalArgumentException(
+                        "All clinicalKnowledgeEvidence items must have provenance="
+                        + ClinicalKnowledgeEvidence.PROVENANCE_CLINICAL_KNOWLEDGE);
+            }
         }
     }
 }

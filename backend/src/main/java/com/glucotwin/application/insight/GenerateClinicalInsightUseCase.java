@@ -19,22 +19,23 @@ import java.util.List;
 /**
  * Agent Supervisor — orchestrates the clinical insight generation pipeline.
  *
- * <p>Flow:
+ * <p>Phase 9 flow:
  * <ol>
- *   <li>{@link TwinAnalysisAgent}      — reads OBSERVED twin state (read-only)
+ *   <li>{@link TwinAnalysisAgent}       — reads OBSERVED twin state (read-only)
  *   <li>{@link PredictionAnalysisAgent} — reads latest PREDICTED risk (read-only)
- *   <li>{@link RiskEvidenceAgent}       — aggregates evidence into structured summary
- *   <li>Assembles {@link ClinicalInsightResponse} with mandatory safety disclaimer
+ *   <li>{@link RiskEvidenceAgent}       — aggregates evidence + retrieves CLINICAL_KNOWLEDGE
+ *   <li>Assembles {@link ClinicalInsightResponse} with safety disclaimer and knowledge evidence
  * </ol>
  *
- * <p>Safety invariants enforced here:
+ * <p>Safety invariants:
  * <ul>
- *   <li>If twin data is unavailable, throws {@link InsightGenerationException} — never fabricates.
- *   <li>If prediction data is unavailable, throws with a clear "generate prediction first" message.
+ *   <li>Twin unavailable → throws, never fabricates.
+ *   <li>Prediction unavailable → throws with "generate prediction first" message.
  *   <li>SIMULATED data is never included in the response.
- *   <li>OBSERVED and PREDICTED provenance labels are always kept distinct.
- *   <li>The Digital Twin is never mutated during analysis.
- *   <li>The safety disclaimer is always present, always verbatim.
+ *   <li>OBSERVED, PREDICTED, and CLINICAL_KNOWLEDGE provenance labels always kept distinct.
+ *   <li>Digital Twin is never mutated.
+ *   <li>Safety disclaimer always present verbatim.
+ *   <li>Knowledge retrieval failure is non-fatal — insight is still returned.
  * </ul>
  */
 @Service
@@ -50,13 +51,13 @@ public class GenerateClinicalInsightUseCase {
      * Generate a structured clinical insight for the given patient.
      *
      * @param patientId the patient to analyse
-     * @param question  the clinician's question (recorded for context; not used to alter data)
+     * @param question  the clinician's question (recorded for context; does not alter data)
      * @return a fully populated {@link ClinicalInsightResponse}
-     * @throws InsightGenerationException if any required evidence is unavailable
+     * @throws InsightGenerationException if required evidence is unavailable
      */
     @Transactional(readOnly = true)
     public ClinicalInsightResponse execute(PatientId patientId, String question) {
-        log.info("[AgentSupervisor] Starting clinical insight generation for patient={} question='{}'",
+        log.info("[AgentSupervisor] Starting clinical insight for patient={} question='{}'",
                 patientId.value(), question);
 
         // ── Step 1: Twin Analysis Agent ───────────────────────────────────────
@@ -67,8 +68,6 @@ public class GenerateClinicalInsightUseCase {
             throw InsightGenerationException.twinUnavailable(patientId.value().toString());
         }
         TwinAnalysisResult twin = twinResult.valueOrThrow();
-        log.debug("[AgentSupervisor] Twin analysis complete — version={}, status={}",
-                twin.twinStateVersion(), twin.twinStatus());
 
         // ── Step 2: Prediction Analysis Agent ────────────────────────────────
         AgentResult<PredictionAnalysisResult> predResult = predictionAgent.analyse(patientId);
@@ -79,10 +78,8 @@ public class GenerateClinicalInsightUseCase {
             throw InsightGenerationException.predictionUnavailable(patientId.value().toString());
         }
         PredictionAnalysisResult pred = predResult.valueOrThrow();
-        log.debug("[AgentSupervisor] Prediction analysis complete — risk={}, prob={}",
-                pred.riskCategory(), pred.spikeProbability());
 
-        // ── Step 3: Risk/Evidence Agent ───────────────────────────────────────
+        // ── Step 3: Risk/Evidence Agent (+ knowledge retrieval) ───────────────
         AgentResult<EvidenceAggregationResult> evidenceResult =
                 evidenceAgent.aggregate(twin, pred);
         if (!evidenceResult.isSuccess()) {
@@ -110,10 +107,12 @@ public class GenerateClinicalInsightUseCase {
                 evidence.evidenceSummary(),
                 evidence.uncertainty(),
                 ClinicalInsightResponse.PROVENANCE_LABEL,
-                ClinicalInsightResponse.SAFETY_DISCLAIMER);
+                ClinicalInsightResponse.SAFETY_DISCLAIMER,
+                evidence.retrievedKnowledge());   // Phase 9: CLINICAL_KNOWLEDGE evidence
 
-        log.info("[AgentSupervisor] Clinical insight generated for patient={} risk={}",
-                patientId.value(), pred.riskCategory());
+        log.info("[AgentSupervisor] Insight generated — patient={} risk={} knowledge={}",
+                patientId.value(), pred.riskCategory(),
+                evidence.retrievedKnowledge().size());
         return response;
     }
 }
