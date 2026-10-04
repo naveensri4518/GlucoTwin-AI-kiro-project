@@ -11,6 +11,7 @@ import { useCgmHistory } from '@/hooks/useCgmHistory'
 import type { EhrRecord, TwinState, DynamicLayer } from '@/types/digitalTwin'
 import type { Prediction, RiskCategory, ContributingFactor } from '@/types/prediction'
 import { ApiError } from '@/lib/apiClient'
+import { WhatIfSimulationPanel } from '@/components/WhatIfSimulationPanel'
 import {
   LineChart,
   Line,
@@ -974,6 +975,9 @@ export default function PatientDetailPage() {
 
           {/* ── Prediction Dashboard (Phase 5, new) ── */}
           {patientId && <PredictionDashboard patientId={patientId} />}
+
+          {/* ── What-If Simulation Panel (Phase 7B) ── */}
+          {patientId && <WhatIfSimulationPanel patientId={patientId} />}
         </>
       )}
     </div>

@@ -1,0 +1,55 @@
+{
+  "version": "0.1",
+  "project": {
+    "name": "GlucoTwin AI",
+    "description": "Digital twin backend for glucose monitoring, EHR, predictions, and Phase 7A what-if simulations.",
+    "baseUrl": "http://localhost:8080",
+    "createdAt": "2026-10-04T00:00:00Z"
+  },
+  "default": {
+    "workspace": "glucotwin-ai",
+    "collection": "backend-api",
+    "environment": "local"
+  },
+  "workspaces": {
+    "glucotwin-ai": {
+      "id": "cbe42802-4c29-463b-a422-b34ebcd57fe1",
+      "name": "GlucoTwin AI",
+      "type": "personal",
+      "description": "API testing workspace for the GlucoTwin AI Spring Boot backend.",
+      "createdAt": "2026-10-04T00:00:00Z"
+    }
+  },
+  "collections": {
+    "backend-api": {
+      "id": "cdfb90d7-c8c7-4b8e-a806-5f1111d25a25",
+      "uid": "55393738-cdfb90d7-c8c7-4b8e-a806-5f1111d25a25",
+      "name": "GlucoTwin AI - Backend API",
+      "workspace": "glucotwin-ai",
+      "description": "All existing GlucoTwin backend endpoints: patients, EHR, Digital Twin state, CGM history, predictions, and Phase 7A simulations.",
+      "requestCount": 7,
+      "endpoints": [
+        "GET  /api/v1/patients",
+        "GET  /api/v1/patients/{patientId}/ehr",
+        "GET  /api/v1/patients/{patientId}/twin-state",
+        "GET  /api/v1/patients/{patientId}/wearable-events/cgm-history",
+        "POST /api/v1/patients/{patientId}/predictions",
+        "GET  /api/v1/predictions/{predictionId}",
+        "POST /api/v1/patients/{patientId}/simulations"
+      ],
+      "createdAt": "2026-10-04T00:00:00Z"
+    }
+  },
+  "environments": {
+    "local": {
+      "id": "78fb3610-5e16-4893-8dda-621e12380372",
+      "uid": "55393738-78fb3610-5e16-4893-8dda-621e12380372",
+      "name": "GlucoTwin AI - Local Development",
+      "workspace": "glucotwin-ai",
+      "variables": {
+        "API_URL": "http://localhost:8080"
+      },
+      "createdAt": "2026-10-04T00:00:00Z"
+    }
+  }
+}
