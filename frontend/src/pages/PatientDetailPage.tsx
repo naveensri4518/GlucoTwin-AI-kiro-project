@@ -7,9 +7,20 @@ import {
   usePrediction,
   useCreatePrediction,
 } from '@/hooks/usePredictions'
+import { useCgmHistory } from '@/hooks/useCgmHistory'
 import type { EhrRecord, TwinState, DynamicLayer } from '@/types/digitalTwin'
 import type { Prediction, RiskCategory, ContributingFactor } from '@/types/prediction'
 import { ApiError } from '@/lib/apiClient'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Dot,
+} from 'recharts'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -604,6 +615,233 @@ function PredictionDashboard({ patientId }: { patientId: string }) {
   )
 }
 
+// ── NEW: CGM history chart ────────────────────────────────────────────────────
+
+/** Format ISO timestamp to a compact "HH:mm" label for the chart x-axis. */
+function fmtChartTime(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(
+      new Date(iso)
+    )
+  } catch {
+    return iso
+  }
+}
+
+interface ChartPoint {
+  time: string       // display label for x-axis
+  isoTime: string    // original ISO for tooltip
+  value: number
+}
+
+function CgmHistorySection({ patientId }: { patientId: string }) {
+  const { data, isLoading, isError, error } = useCgmHistory(patientId)
+
+  // ── Loading ──
+  if (isLoading) {
+    return (
+      <div className="card mt-6 p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Glucose History
+          </h2>
+        </div>
+        <div className="h-40 animate-pulse rounded bg-surface" aria-hidden="true" />
+        <span className="sr-only">Loading glucose history…</span>
+      </div>
+    )
+  }
+
+  // ── Error (section-isolated — does not affect the rest of the page) ──
+  if (isError) {
+    return (
+      <div className="card mt-6 p-5" role="alert">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Glucose History
+        </h2>
+        <p className="text-xs text-risk-high">
+          {error instanceof Error ? error.message : 'Failed to load glucose history'}
+        </p>
+      </div>
+    )
+  }
+
+  // Sort chronologically (oldest → newest) for the chart
+  const readings = [...(data ?? [])].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+
+  const chartPoints: ChartPoint[] = readings.map((r) => ({
+    time: fmtChartTime(r.timestamp),
+    isoTime: r.timestamp,
+    value: r.value,
+  }))
+
+  // Summary metrics — derived only from API response, never fabricated
+  const values = readings.map((r) => r.value)
+  const latest = readings.length > 0 ? readings[readings.length - 1] : null
+  const minVal  = values.length > 0 ? Math.min(...values) : null
+  const maxVal  = values.length > 0 ? Math.max(...values) : null
+
+  return (
+    <div className="card mt-6 p-5">
+      {/* Header */}
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Glucose History
+        </h2>
+        <span className="rounded border border-slate-600 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          OBSERVED
+        </span>
+      </div>
+      <p className="mb-4 text-[11px] text-slate-500">
+        Observed wearable glucose readings from the Digital Twin rolling buffer.
+        Not a prediction — these are raw sensor values.
+      </p>
+
+      {/* ── Empty state ── */}
+      {readings.length === 0 && (
+        <div className="flex h-32 flex-col items-center justify-center rounded border border-dashed border-surface-border text-center">
+          <p className="text-xs text-slate-400">No glucose history available yet.</p>
+          <p className="mt-1 text-[11px] text-slate-600">
+            Wearable glucose events must be received before history can be displayed.
+          </p>
+        </div>
+      )}
+
+      {/* ── Summary metrics + chart ── */}
+      {readings.length > 0 && (
+        <>
+          {/* Summary row */}
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <MetricTile
+              label="Latest observed"
+              value={latest ? `${latest.value.toFixed(1)} mmol/L` : '—'}
+              highlight
+            />
+            <MetricTile
+              label="Minimum"
+              value={minVal != null ? `${minVal.toFixed(1)} mmol/L` : '—'}
+            />
+            <MetricTile
+              label="Maximum"
+              value={maxVal != null ? `${maxVal.toFixed(1)} mmol/L` : '—'}
+            />
+            <MetricTile
+              label="Readings"
+              value={readings.length.toString()}
+            />
+          </div>
+
+          {/* Latest reading highlight */}
+          {latest && (
+            <div className="mb-5 flex items-center gap-3 rounded border border-surface-border bg-surface px-4 py-3">
+              <div>
+                <p className="text-[10px] text-slate-500">
+                  Latest observed glucose{' '}
+                  <span className="rounded border border-slate-600 px-1 py-0.5 text-[10px] font-medium uppercase text-slate-400">
+                    OBSERVED
+                  </span>
+                </p>
+                <p className="mt-0.5 text-2xl font-bold tabular-nums text-slate-100">
+                  {latest.value.toFixed(1)}{' '}
+                  <span className="text-sm font-normal text-slate-500">mmol/L</span>
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  <time dateTime={latest.timestamp}>{fmtDateTime(latest.timestamp)}</time>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Recharts line chart */}
+          <div aria-label="Glucose history chart" role="img">
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart
+                data={chartPoints}
+                margin={{ top: 4, right: 8, left: -16, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#2e3340"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fill: '#64748b', fontSize: 10 }}
+                  axisLine={{ stroke: '#2e3340' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={['auto', 'auto']}
+                  tick={{ fill: '#64748b', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => v.toFixed(1)}
+                  unit=" mmol"
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#21252e',
+                    border: '1px solid #2e3340',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: '#e2e8f0',
+                  }}
+                  formatter={(value: number) => [
+                    `${value.toFixed(1)} mmol/L`,
+                    'Glucose (OBSERVED)',
+                  ]}
+                  labelFormatter={(_: string, payload: { payload?: ChartPoint }[]) => {
+                    const iso = payload?.[0]?.payload?.isoTime
+                    return iso ? fmtDateTime(iso) : ''
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={<Dot r={3} fill="#3b82f6" stroke="#21252e" strokeWidth={1} />}
+                  activeDot={{ r: 5, fill: '#3b82f6' }}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <p className="mt-2 text-[10px] text-slate-600">
+            Rolling buffer of observed glucose readings (wearable sensor data only).
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+function MetricTile({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string
+  value: string
+  highlight?: boolean
+}) {
+  return (
+    <div className="rounded border border-surface-border bg-surface px-3 py-2">
+      <p className="text-[10px] text-slate-500">{label}</p>
+      <p
+        className={`mt-0.5 text-sm font-semibold tabular-nums ${
+          highlight ? 'text-accent' : 'text-slate-200'
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function PatientDetailPage() {
@@ -730,6 +968,9 @@ export default function PatientDetailPage() {
             {/* Wearable vitals */}
             {twin.data?.dynamicLayer && <VitalsCard dl={twin.data.dynamicLayer} />}
           </div>
+
+          {/* ── CGM History chart (Phase 6B) ── */}
+          {patientId && <CgmHistorySection patientId={patientId} />}
 
           {/* ── Prediction Dashboard (Phase 5, new) ── */}
           {patientId && <PredictionDashboard patientId={patientId} />}
