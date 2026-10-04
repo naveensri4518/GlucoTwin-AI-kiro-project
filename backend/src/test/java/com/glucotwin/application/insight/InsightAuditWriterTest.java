@@ -64,7 +64,8 @@ class InsightAuditWriterTest {
                 "No significant uncertainty.",
                 ClinicalInsightResponse.PROVENANCE_LABEL,
                 ClinicalInsightResponse.SAFETY_DISCLAIMER,
-                knowledge);
+                knowledge,
+                null); // executionTrace not needed for audit tests
     }
 
     @BeforeEach

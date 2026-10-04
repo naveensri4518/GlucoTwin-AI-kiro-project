@@ -19,6 +19,8 @@ import { useGenerateClinicalInsight } from '@/hooks/useClinicalInsight'
 import { ApiError } from '@/lib/apiClient'
 import type { RiskCategory } from '@/types/prediction'
 import type {
+  AgentExecutionTrace,
+  AgentStepTrace,
   ClinicalInsightResponse,
   InsightContributingFactor,
   ClinicalKnowledgeEvidence,
@@ -222,6 +224,99 @@ function ClinicalKnowledgeSection({ items }: { items: ClinicalKnowledgeEvidence[
   )
 }
 
+// ── Phase 12: Pipeline execution trace ────────────────────────────────────────
+
+function StepStatusBadge({ status }: { status: AgentStepTrace['status'] }) {
+  if (status === 'SUCCESS') return (
+    <span className="text-[10px] font-semibold text-risk-low">✓</span>
+  )
+  if (status === 'FAILURE') return (
+    <span className="text-[10px] font-semibold text-risk-high">✗</span>
+  )
+  return (
+    <span className="text-[10px] font-semibold text-slate-500">–</span>
+  )
+}
+
+function PipelineExecutionSection({ trace }: { trace: AgentExecutionTrace }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div
+      className="mt-4 border-t border-surface-border pt-4"
+      data-testid="pipeline-execution-section"
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 text-left
+          focus:outline-none focus:ring-1 focus:ring-accent rounded"
+        aria-expanded={expanded}
+        aria-controls="pipeline-execution-details"
+      >
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            🧠 Pipeline Execution
+          </p>
+          <span
+            className="font-mono text-[10px] text-slate-500"
+            data-testid="pipeline-total-duration"
+          >
+            {trace.totalDurationMs} ms total
+          </span>
+          {trace.traceId && (
+            <span
+              className="font-mono text-[10px] text-slate-600"
+              data-testid="pipeline-trace-id"
+            >
+              trace: {trace.traceId}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] text-slate-600" aria-hidden="true">
+          {expanded ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {expanded && (
+        <div
+          id="pipeline-execution-details"
+          className="mt-2 flex flex-col gap-1"
+          data-testid="pipeline-steps"
+        >
+          {trace.steps.map((step) => (
+            <div
+              key={step.agentName}
+              className="flex items-center gap-2 rounded px-2 py-1 text-[11px]
+                hover:bg-surface-raised"
+              data-testid={`pipeline-step-${step.agentName.replace(/\s+/g, '-').toLowerCase()}`}
+            >
+              <StepStatusBadge status={step.status} />
+              <span
+                className={`w-36 flex-shrink-0 font-medium ${
+                  step.status === 'SKIPPED' ? 'text-slate-600' : 'text-slate-300'
+                }`}
+                data-testid="step-name"
+              >
+                {step.agentName}
+              </span>
+              <span
+                className="w-16 flex-shrink-0 font-mono text-[10px] text-slate-500"
+                data-testid="step-duration"
+              >
+                {step.durationMs} ms
+              </span>
+              <span className="truncate text-[10px] text-slate-600">
+                {step.detail}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Data quality warnings ─────────────────────────────────────────────────────
 
 function DataQualityWarnings({ warnings }: { warnings: string[] }) {
@@ -333,6 +428,11 @@ function InsightResultCard({ insight }: { insight: ClinicalInsightResponse }) {
           <strong className="text-slate-400">Decision support only.</strong>{' '}
           {insight.safetyDisclaimer}
         </p>
+
+        {/* Phase 12: Pipeline execution trace (collapsed by default) */}
+        {insight.executionTrace && (
+          <PipelineExecutionSection trace={insight.executionTrace} />
+        )}
       </SectionCard>
     </div>
   )

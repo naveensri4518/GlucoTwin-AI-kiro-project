@@ -54,6 +54,27 @@ export interface ClinicalKnowledgeEvidence {
   provenance: 'CLINICAL_KNOWLEDGE'
 }
 
+// ── Phase 12: Execution Trace ─────────────────────────────────────────────────
+
+/** Single pipeline stage trace — observability metadata only, not clinical evidence. */
+export interface AgentStepTrace {
+  agentName: string
+  /** SUCCESS | FAILURE | SKIPPED */
+  status: 'SUCCESS' | 'FAILURE' | 'SKIPPED'
+  durationMs: number
+  detail: string
+}
+
+/** Full pipeline execution trace — observability metadata only. */
+export interface AgentExecutionTrace {
+  /** MDC traceId, may be null if no trace context was active. */
+  traceId: string | null
+  startedAt: string   // ISO-8601 UTC
+  /** Clinical pipeline duration in ms (excludes audit write time). */
+  totalDurationMs: number
+  steps: AgentStepTrace[]
+}
+
 /**
  * Full response from POST /api/v1/patients/{patientId}/clinical-insights.
  *
@@ -63,6 +84,7 @@ export interface ClinicalKnowledgeEvidence {
  *   clinicalKnowledgeEvidence → CLINICAL_KNOWLEDGE
  *   dataProvenance            → "OBSERVED+PREDICTED"
  *   safetyDisclaimer          → always present
+ *   executionTrace            → observability only, may be absent
  *
  * SIMULATED data is never included in this response.
  */
@@ -81,5 +103,7 @@ export interface ClinicalInsightResponse {
   uncertainty: string
   dataProvenance: string           // always "OBSERVED+PREDICTED"
   safetyDisclaimer: string         // always the canonical safety text
-  clinicalKnowledgeEvidence: ClinicalKnowledgeEvidence[]  // Phase 9, may be empty
+  clinicalKnowledgeEvidence: ClinicalKnowledgeEvidence[]
+  /** Phase 12: pipeline execution trace. Absent when backend did not capture it. */
+  executionTrace?: AgentExecutionTrace | null
 }

@@ -1,8 +1,9 @@
 package com.glucotwin.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.glucotwin.domain.insight.AgentExecutionTrace;
+import com.glucotwin.domain.insight.AgentStepTrace;
 import com.glucotwin.domain.insight.ClinicalInsightResponse;
-import com.glucotwin.domain.insight.ClinicalKnowledgeEvidence;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,8 +18,8 @@ import java.util.UUID;
  * - clinicalKnowledgeEvidence → each carries provenance=CLINICAL_KNOWLEDGE (Phase 9)
  * - safetyDisclaimer          → always present
  *
- * Phase 9: clinicalKnowledgeEvidence is an additive field.
- * Existing API consumers that do not read it are unaffected.
+ * Phase 12: executionTrace is an optional observability field.
+ * null when not captured; @JsonInclude(NON_NULL) omits it from JSON.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ClinicalInsightResponseDto(
@@ -36,8 +37,10 @@ public record ClinicalInsightResponseDto(
         String uncertainty,
         String dataProvenance,
         String safetyDisclaimer,
-        /** Phase 9: general clinical knowledge evidence for the identified risk factors. */
-        List<ClinicalKnowledgeEvidenceDto> clinicalKnowledgeEvidence) {
+        /** Phase 9: general clinical knowledge evidence. */
+        List<ClinicalKnowledgeEvidenceDto> clinicalKnowledgeEvidence,
+        /** Phase 12: pipeline execution trace. Omitted from JSON when null. */
+        AgentExecutionTraceDto executionTrace) {
 
     // ── Nested DTOs ───────────────────────────────────────────────────────────
 
@@ -48,10 +51,6 @@ public record ClinicalInsightResponseDto(
     public record ContributingFactorDto(
             String factorName, double contribution, String direction) {}
 
-    /**
-     * Phase 9 DTO for a single clinical knowledge evidence item.
-     * provenance is always "CLINICAL_KNOWLEDGE".
-     */
     public record ClinicalKnowledgeEvidenceDto(
             String knowledgeId,
             String title,
@@ -61,6 +60,20 @@ public record ClinicalInsightResponseDto(
             String topic,
             String excerpt,
             String provenance) {}
+
+    /** Phase 12: pipeline execution trace DTO. */
+    public record AgentExecutionTraceDto(
+            String traceId,
+            Instant startedAt,
+            long totalDurationMs,
+            List<AgentStepTraceDto> steps) {}
+
+    /** Phase 12: single pipeline step trace DTO. */
+    public record AgentStepTraceDto(
+            String agentName,
+            String status,
+            long durationMs,
+            String detail) {}
 
     // ── Factory ───────────────────────────────────────────────────────────────
 
@@ -85,6 +98,8 @@ public record ClinicalInsightResponseDto(
                         k.version(), k.topic(), k.excerpt(), k.provenance()))
                 .toList();
 
+        AgentExecutionTraceDto traceDto = mapTrace(domain.executionTrace());
+
         return new ClinicalInsightResponseDto(
                 domain.patientId(),
                 domain.generatedAt(),
@@ -100,6 +115,18 @@ public record ClinicalInsightResponseDto(
                 domain.uncertainty(),
                 domain.dataProvenance(),
                 domain.safetyDisclaimer(),
-                knowledge);
+                knowledge,
+                traceDto);
+    }
+
+    /** Maps the domain trace to DTO; returns null when trace is absent. */
+    private static AgentExecutionTraceDto mapTrace(AgentExecutionTrace trace) {
+        if (trace == null) return null;
+        List<AgentStepTraceDto> steps = trace.steps().stream()
+                .map(s -> new AgentStepTraceDto(
+                        s.agentName(), s.status(), s.durationMs(), s.detail()))
+                .toList();
+        return new AgentExecutionTraceDto(
+                trace.traceId(), trace.startedAt(), trace.totalDurationMs(), steps);
     }
 }

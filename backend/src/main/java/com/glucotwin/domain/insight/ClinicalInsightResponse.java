@@ -20,8 +20,9 @@ import java.util.UUID;
  *   <li>No SIMULATED data is ever included
  * </ul>
  *
- * <p>Phase 9 addition: {@code clinicalKnowledgeEvidence} is additive and optional —
- * existing API consumers that do not read this field are unaffected.
+ * <p>Phase 12 addition: {@code executionTrace} is an optional in-memory observability
+ * field. It is purely metadata — never treated as clinical evidence. May be null.
+ * Existing API consumers that do not read this field are unaffected.
  *
  * <p>This is clinical decision support — not a diagnosis or medical recommendation.
  */
@@ -41,7 +42,9 @@ public record ClinicalInsightResponse(
         String dataProvenance,
         String safetyDisclaimer,
         /** Phase 9: retrieved general clinical knowledge evidence. Never null; may be empty. */
-        List<ClinicalKnowledgeEvidence> clinicalKnowledgeEvidence) {
+        List<ClinicalKnowledgeEvidence> clinicalKnowledgeEvidence,
+        /** Phase 12: in-memory pipeline execution trace. Null if trace was not captured. */
+        AgentExecutionTrace executionTrace) {
 
     public static final String SAFETY_DISCLAIMER =
             "This is clinical decision support, not a diagnosis or medical recommendation. "
@@ -59,6 +62,7 @@ public record ClinicalInsightResponse(
         contributingFactors       = contributingFactors       != null ? List.copyOf(contributingFactors)       : List.of();
         dataQualityWarnings       = dataQualityWarnings       != null ? List.copyOf(dataQualityWarnings)       : List.of();
         clinicalKnowledgeEvidence = clinicalKnowledgeEvidence != null ? List.copyOf(clinicalKnowledgeEvidence) : List.of();
+        // executionTrace is intentionally nullable — it is observability metadata, not clinical data
         if (!SAFETY_DISCLAIMER.equals(safetyDisclaimer)) {
             throw new IllegalArgumentException(
                     "Safety disclaimer must match the canonical text");
