@@ -1,0 +1,6 @@
+# Local development overrides — do NOT commit secrets here
+# Copy this file and fill in values for local dev
+logging:
+  level:
+    com.glucotwin: DEBUG
+    org.springframework.security: DEBUG

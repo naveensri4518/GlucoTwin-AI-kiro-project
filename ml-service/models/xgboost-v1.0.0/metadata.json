@@ -1,0 +1,24 @@
+{
+  "version": "xgboost-v1.0.0",
+  "type": "xgboost",
+  "trainedAt": "2026-10-04T06:22:37.382475+00:00",
+  "featureOrder": [
+    "cgm_current",
+    "cgm_delta_30m",
+    "cgm_mean_60m",
+    "cgm_slope_60m",
+    "heart_rate_current",
+    "hrv_current",
+    "sleep_duration_last",
+    "step_count_today",
+    "activity_level_enc",
+    "hba1c_latest",
+    "bmi",
+    "time_of_day_sin",
+    "time_of_day_cos",
+    "days_since_diagnosis"
+  ],
+  "glucoseSpikeThreshold": 10.0,
+  "trainingSamples": 60000,
+  "testAucRoc": 0.8273534946405808
+}

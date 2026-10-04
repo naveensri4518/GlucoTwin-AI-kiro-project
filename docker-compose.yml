@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: glucotwin-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - glucotwin-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: glucotwin
+      POSTGRES_USER: ${POSTGRES_USER:-glucotwin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-glucotwin}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-glucotwin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: glucotwin-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - glucotwin-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: glucotwin-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/glucotwin
+      POSTGRES_USER: ${POSTGRES_USER:-glucotwin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-glucotwin}
+      REDIS_URL: redis://redis:6379
+      ML_SERVICE_URL: http://ml-service:8000
+      ML_SERVICE_INTERNAL_TOKEN: ${ML_SERVICE_INTERNAL_TOKEN:-dev-internal-token}
+      JWT_PUBLIC_KEY: ""
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: glucotwin-ml-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ML_SERVICE_INTERNAL_TOKEN: ${ML_SERVICE_INTERNAL_TOKEN:-dev-internal-token}
+      MODEL_DIR: /app/models/xgboost-v1.0.0
+      MODEL_VERSION: xgboost-v1.0.0
+      LOG_LEVEL: INFO
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  glucotwin-db-data:
+  glucotwin-redis-data:

@@ -1,0 +1,25 @@
+-- V4: Create glucose_predictions table
+CREATE TABLE glucose_predictions (
+    prediction_id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id              UUID NOT NULL REFERENCES patients(patient_id),
+    status                  VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    predicted_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    prediction_horizon_hrs  INTEGER NOT NULL DEFAULT 2,
+    spike_probability       NUMERIC(8,6),
+    risk_category           VARCHAR(20),
+    ci_low                  NUMERIC(8,6),
+    ci_high                 NUMERIC(8,6),
+    contributing_factors    JSONB,
+    data_provenance         VARCHAR(20) NOT NULL DEFAULT 'PREDICTED',
+    twin_state_version      INTEGER NOT NULL,
+    model_version           VARCHAR(50) NOT NULL,
+    data_quality_warnings   TEXT[],
+    feature_vector          JSONB,
+    failure_reason          TEXT,
+    triggered_by            VARCHAR(10) NOT NULL DEFAULT 'AUTO',
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT chk_pred_status CHECK (status IN ('PENDING','COMPLETED','FAILED')),
+    CONSTRAINT chk_pred_provenance CHECK (data_provenance IN ('OBSERVED','PREDICTED','SIMULATED')),
+    CONSTRAINT chk_pred_probability CHECK (spike_probability IS NULL OR (spike_probability >= 0.0 AND spike_probability <= 1.0)),
+    CONSTRAINT chk_pred_triggered CHECK (triggered_by IN ('AUTO','MANUAL'))
+);

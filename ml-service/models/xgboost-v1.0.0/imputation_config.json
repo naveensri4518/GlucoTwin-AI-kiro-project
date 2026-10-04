@@ -1,0 +1,13 @@
+{
+  "heart_rate_median": 77.41180256829558,
+  "hrv_median": 49.907545990540385,
+  "sleep_median": 6.49919932155857,
+  "step_median": 7765.0,
+  "hba1c_median": 8.23933652701907,
+  "bmi_median": 31.116186936440478,
+  "cgm_delta_30m_median": 0.0030936788878484366,
+  "cgm_mean_60m_median": 7.594569713073013,
+  "cgm_slope_60m_median": -0.00015246123951020787,
+  "activity_enc_median": 2.0,
+  "days_since_diagnosis_median": 2761.5
+}
