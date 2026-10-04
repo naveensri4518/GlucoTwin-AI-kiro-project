@@ -17,25 +17,37 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Agent Supervisor — orchestrates the clinical insight generation pipeline.
+ * Agent Supervisor — orchestrates the full Phase 11 clinical insight pipeline.
  *
- * <p>Phase 9 flow:
+ * <p>Pipeline (Phase 11):
  * <ol>
- *   <li>{@link TwinAnalysisAgent}       — reads OBSERVED twin state (read-only)
- *   <li>{@link PredictionAnalysisAgent} — reads latest PREDICTED risk (read-only)
- *   <li>{@link RiskEvidenceAgent}       — aggregates evidence + retrieves CLINICAL_KNOWLEDGE
- *   <li>Assembles {@link ClinicalInsightResponse} with safety disclaimer and knowledge evidence
+ *   <li>{@link TwinAnalysisAgent}         — reads OBSERVED twin state (read-only)
+ *   <li>{@link PredictionAnalysisAgent}   — reads latest PREDICTED risk (read-only)
+ *   <li>{@link RiskEvidenceAgent}         — aggregates evidence + retrieves CLINICAL_KNOWLEDGE
+ *   <li>{@link InsightVerificationAgent}  — deterministic consistency checks (non-blocking)
+ *   <li>Assemble {@link ClinicalInsightResponse} with all warnings + safety disclaimer
+ *   <li>{@link InsightAuditWriter}        — durable audit in its own REQUIRES_NEW transaction
  * </ol>
+ *
+ * <p>Transaction strategy:
+ * <ul>
+ *   <li>This method runs {@code @Transactional(readOnly=true)} — the entire data-reading
+ *       pipeline is read-only and never mutates the Digital Twin, prediction, or simulation.
+ *   <li>{@link InsightAuditWriter#write} runs in a separate {@code REQUIRES_NEW}
+ *       transaction, isolating the audit write from the read-only pipeline.
+ *   <li>Audit failure is non-fatal — the insight response is always returned.
+ * </ul>
  *
  * <p>Safety invariants:
  * <ul>
- *   <li>Twin unavailable → throws, never fabricates.
+ *   <li>Twin unavailable → throws {@link InsightGenerationException}, never fabricates.
  *   <li>Prediction unavailable → throws with "generate prediction first" message.
  *   <li>SIMULATED data is never included in the response.
  *   <li>OBSERVED, PREDICTED, and CLINICAL_KNOWLEDGE provenance labels always kept distinct.
  *   <li>Digital Twin is never mutated.
  *   <li>Safety disclaimer always present verbatim.
- *   <li>Knowledge retrieval failure is non-fatal — insight is still returned.
+ *   <li>Verification warnings are additive only — never block the pipeline.
+ *   <li>Audit failure never blocks the clinical insight response.
  * </ul>
  */
 @Service
@@ -43,15 +55,17 @@ import java.util.List;
 @Slf4j
 public class GenerateClinicalInsightUseCase {
 
-    private final TwinAnalysisAgent twinAgent;
-    private final PredictionAnalysisAgent predictionAgent;
-    private final RiskEvidenceAgent evidenceAgent;
+    private final TwinAnalysisAgent         twinAgent;
+    private final PredictionAnalysisAgent   predictionAgent;
+    private final RiskEvidenceAgent         evidenceAgent;
+    private final InsightVerificationAgent  verificationAgent;
+    private final InsightAuditWriter        auditWriter;
 
     /**
      * Generate a structured clinical insight for the given patient.
      *
      * @param patientId the patient to analyse
-     * @param question  the clinician's question (recorded for context; does not alter data)
+     * @param question  the clinician's question (logged for context; does not alter data)
      * @return a fully populated {@link ClinicalInsightResponse}
      * @throws InsightGenerationException if required evidence is unavailable
      */
@@ -90,8 +104,13 @@ public class GenerateClinicalInsightUseCase {
         }
         EvidenceAggregationResult evidence = evidenceResult.valueOrThrow();
 
-        // ── Step 4: Assemble final response ───────────────────────────────────
+        // ── Step 4: Verification Agent (non-blocking consistency checks) ──────
+        List<String> verificationWarnings = verificationAgent.verify(twin, pred);
+
+        // ── Step 5: Assemble final response ───────────────────────────────────
+        // Merge evidence warnings + verification warnings — verification is additive only
         List<String> allWarnings = new ArrayList<>(evidence.combinedDataQualityWarnings());
+        allWarnings.addAll(verificationWarnings);
 
         ClinicalInsightResponse response = new ClinicalInsightResponse(
                 patientId.value(),
@@ -108,11 +127,15 @@ public class GenerateClinicalInsightUseCase {
                 evidence.uncertainty(),
                 ClinicalInsightResponse.PROVENANCE_LABEL,
                 ClinicalInsightResponse.SAFETY_DISCLAIMER,
-                evidence.retrievedKnowledge());   // Phase 9: CLINICAL_KNOWLEDGE evidence
+                evidence.retrievedKnowledge());
 
-        log.info("[AgentSupervisor] Insight generated — patient={} risk={} knowledge={}",
+        log.info("[AgentSupervisor] Insight generated — patient={} risk={} verificationWarnings={} knowledge={}",
                 patientId.value(), pred.riskCategory(),
-                evidence.retrievedKnowledge().size());
+                verificationWarnings.size(), evidence.retrievedKnowledge().size());
+
+        // ── Step 6: Audit (REQUIRES_NEW transaction — non-fatal) ─────────────
+        auditWriter.write(patientId, response);
+
         return response;
     }
 }

@@ -32,6 +32,10 @@ public class PredictionAuditLogJpaEntity {
     @Column(name = "trace_id", length = 64)
     private String traceId;
 
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    private String metadata;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

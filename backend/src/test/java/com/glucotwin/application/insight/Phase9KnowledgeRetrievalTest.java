@@ -264,8 +264,17 @@ class Phase9KnowledgeRetrievalTest {
 
         // Real retriever (empty result is fine)
         RiskEvidenceAgent evidenceAgent = new RiskEvidenceAgent(retriever);
+        InsightVerificationAgent verAgent = new InsightVerificationAgent();
+        // Audit writer is a no-op for this unit test (no DB)
+        InsightAuditWriter noOpAuditWriter = new InsightAuditWriter(null, null) {
+            @Override
+            public void write(com.glucotwin.domain.shared.PatientId p,
+                              ClinicalInsightResponse r) { /* no-op */ }
+        };
         GenerateClinicalInsightUseCase useCase =
-                new GenerateClinicalInsightUseCase(twinAgent, predictionAgent, evidenceAgent);
+                new GenerateClinicalInsightUseCase(
+                        twinAgent, predictionAgent, evidenceAgent,
+                        verAgent, noOpAuditWriter);
 
         ClinicalInsightResponse response = useCase.execute(patientId, "test question");
 

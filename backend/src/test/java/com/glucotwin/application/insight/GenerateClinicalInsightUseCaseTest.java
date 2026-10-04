@@ -52,6 +52,8 @@ class GenerateClinicalInsightUseCaseTest {
     @Mock private TwinAnalysisAgent twinAgent;
     @Mock private PredictionAnalysisAgent predictionAgent;
     @Mock private RiskEvidenceAgent evidenceAgent;
+    @Mock private InsightVerificationAgent verificationAgent;
+    @Mock private InsightAuditWriter auditWriter;
 
     private GenerateClinicalInsightUseCase useCase;
     private PatientId patientId;
@@ -93,8 +95,12 @@ class GenerateClinicalInsightUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new GenerateClinicalInsightUseCase(twinAgent, predictionAgent, evidenceAgent);
+        useCase = new GenerateClinicalInsightUseCase(twinAgent, predictionAgent, evidenceAgent,
+                verificationAgent, auditWriter);
         patientId = PatientId.random();
+        // Default: verification returns no warnings, audit is a no-op
+        lenient().when(verificationAgent.verify(any(), any())).thenReturn(List.of());
+        lenient().doNothing().when(auditWriter).write(any(), any());
     }
 
     // ── Test 1: Supervisor orchestration — full happy path ────────────────────
