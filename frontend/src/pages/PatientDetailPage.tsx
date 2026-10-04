@@ -12,6 +12,7 @@ import type { EhrRecord, TwinState, DynamicLayer } from '@/types/digitalTwin'
 import type { Prediction, RiskCategory, ContributingFactor } from '@/types/prediction'
 import { ApiError } from '@/lib/apiClient'
 import { WhatIfSimulationPanel } from '@/components/WhatIfSimulationPanel'
+import { ClinicalInsightPanel } from '@/components/ClinicalInsightPanel'
 import {
   LineChart,
   Line,
@@ -978,6 +979,9 @@ export default function PatientDetailPage() {
 
           {/* ── What-If Simulation Panel (Phase 7B) ── */}
           {patientId && <WhatIfSimulationPanel patientId={patientId} />}
+
+          {/* ── Clinical Insight Panel (Phase 10) ── */}
+          {patientId && <ClinicalInsightPanel patientId={patientId} />}
         </>
       )}
     </div>
