@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "GlucoTwin ML Property Check",
+      "trigger": "PostFileSave",
+      "matcher": "ml-service/app/(features|models)/.*\\.py$",
+      "description": "Runs Hypothesis property-based tests after saving a feature engineering or model file. Verifies core ML invariants: all features finite, feature extraction is a pure function, and imputed field names are valid. Lightweight — completes in ~4s.",
+      "action": {
+        "type": "command",
+        "command": "cd \"c:\\Users\\Naveensri\\Downloads\\GlucoTwin-AI-kiro-project\\GlucoTwin-AI-kiro-project\\ml-service\" && python -m pytest tests/property/ -q --tb=short 2>&1",
+        "timeout": 60
+      }
+    }
+  ]
+}
