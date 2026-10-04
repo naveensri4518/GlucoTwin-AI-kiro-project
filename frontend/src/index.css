@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-surface text-slate-100 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Thin scrollbar for dark UI */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-surface; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-border rounded-full; }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface-raised border border-surface-border rounded-lg;
+  }
+  .badge-low      { @apply bg-risk-low/10 text-risk-low border border-risk-low/30; }
+  .badge-moderate { @apply bg-risk-moderate/10 text-risk-moderate border border-risk-moderate/30; }
+  .badge-high     { @apply bg-risk-high/10 text-risk-high border border-risk-high/30; }
+  .badge-critical { @apply bg-risk-critical/10 text-risk-critical border border-risk-critical/30; }
+}

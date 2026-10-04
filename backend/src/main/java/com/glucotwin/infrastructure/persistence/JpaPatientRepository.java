@@ -6,6 +6,8 @@ import com.glucotwin.domain.shared.PatientId;
 import com.glucotwin.infrastructure.persistence.entity.PatientJpaEntity;
 import com.glucotwin.infrastructure.persistence.repository.PatientJpaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -35,5 +37,11 @@ public class JpaPatientRepository implements PatientRepository {
     @Override
     public boolean existsById(PatientId patientId) {
         return jpaRepo.existsById(patientId.value());
+    }
+
+    @Override
+    public Page<Patient> findAll(Pageable pageable) {
+        return jpaRepo.findAll(pageable)
+                .map(e -> new Patient(PatientId.of(e.getPatientId()), e.getCreatedAt()));
     }
 }

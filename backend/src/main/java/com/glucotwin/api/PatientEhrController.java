@@ -1,6 +1,8 @@
 package com.glucotwin.api;
 
+import com.glucotwin.api.dto.EhrResponse;
 import com.glucotwin.api.dto.EhrUploadRequest;
+import com.glucotwin.application.GetEhrUseCase;
 import com.glucotwin.application.IngestEhrUseCase;
 import com.glucotwin.domain.shared.PatientId;
 import com.glucotwin.domain.shared.ValidationException;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class PatientEhrController {
 
     private final IngestEhrUseCase ingestEhrUseCase;
+    private final GetEhrUseCase getEhrUseCase;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('CLINICIAN','ADMIN')")
@@ -51,5 +54,14 @@ public class PatientEhrController {
         return ResponseEntity.status(201).body(Map.of(
                 "patientId", patientId.toString(),
                 "status", "EHR_INGESTED"));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('CLINICIAN','ADMIN')")
+    @Operation(summary = "Retrieve the EHR record for a patient",
+               description = "Returns static EHR data (OBSERVED provenance). Returns 404 if no EHR exists for this patient.")
+    public ResponseEntity<EhrResponse> get(@PathVariable UUID patientId) {
+        EhrRecord record = getEhrUseCase.execute(PatientId.of(patientId));
+        return ResponseEntity.ok(EhrResponse.from(record));
     }
 }
