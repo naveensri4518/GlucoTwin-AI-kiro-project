@@ -1,6 +1,7 @@
 package com.glucotwin.api;
 
 import com.glucotwin.api.dto.ErrorResponse;
+import com.glucotwin.domain.insight.InsightGenerationException;
 import com.glucotwin.domain.prediction.GlucoseReadingRequiredException;
 import com.glucotwin.domain.prediction.PredictionServiceUnavailableException;
 import com.glucotwin.domain.prediction.PredictionTimeoutException;
@@ -22,6 +23,18 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(InsightGenerationException.class)
+    public ResponseEntity<ErrorResponse> handleInsightGeneration(InsightGenerationException ex) {
+        log.warn("Clinical insight generation failed [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        HttpStatus status = switch (ex.getErrorCode()) {
+            case "INSIGHT_TWIN_UNAVAILABLE"       -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case "INSIGHT_PREDICTION_UNAVAILABLE" -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case "INSIGHT_INSUFFICIENT_DATA"      -> HttpStatus.UNPROCESSABLE_ENTITY;
+            default                               -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+        return build(status, ex.getErrorCode(), ex.getMessage());
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
