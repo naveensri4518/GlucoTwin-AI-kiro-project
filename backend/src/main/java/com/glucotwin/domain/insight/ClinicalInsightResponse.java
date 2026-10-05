@@ -15,14 +15,16 @@ import java.util.UUID;
  * <p>Provenance rules enforced here:
  * <ul>
  *   <li>keyObservedSignals — all OBSERVED
- *   <li>spikeProbability / riskCategory / confidenceInterval — PREDICTED
- *   <li>clinicalKnowledgeEvidence — all CLINICAL_KNOWLEDGE (Phase 9, may be empty)
+ *   <li>spikeProbability / riskCategory / confidenceInterval — PREDICTED (XGBoost only)
+ *   <li>clinicalKnowledgeEvidence — all CLINICAL_KNOWLEDGE (Phase 9)
  *   <li>No SIMULATED data is ever included
  * </ul>
  *
- * <p>Phase 12 addition: {@code executionTrace} is an optional in-memory observability
- * field. It is purely metadata — never treated as clinical evidence. May be null.
- * Existing API consumers that do not read this field are unaffected.
+ * <p>Phase 12: {@code executionTrace} — optional observability metadata, nullable.
+ * <p>Phase 13: {@code explanation} — optional LLM-generated explanation, nullable.
+ *   The explanation is plain natural-language text only. It never replaces or overrides
+ *   the deterministic {@code evidenceSummary}, {@code riskCategory}, or {@code spikeProbability}.
+ *   It is for clinical decision support only — not a diagnosis or recommendation.
  *
  * <p>This is clinical decision support — not a diagnosis or medical recommendation.
  */
@@ -44,7 +46,12 @@ public record ClinicalInsightResponse(
         /** Phase 9: retrieved general clinical knowledge evidence. Never null; may be empty. */
         List<ClinicalKnowledgeEvidence> clinicalKnowledgeEvidence,
         /** Phase 12: in-memory pipeline execution trace. Null if trace was not captured. */
-        AgentExecutionTrace executionTrace) {
+        AgentExecutionTrace executionTrace,
+        /**
+         * Phase 13: LLM-generated explanation paragraph. Null when LLM is disabled,
+         * timed out, or failed. Never affects numeric clinical values.
+         */
+        String explanation) {
 
     public static final String SAFETY_DISCLAIMER =
             "This is clinical decision support, not a diagnosis or medical recommendation. "
@@ -62,7 +69,7 @@ public record ClinicalInsightResponse(
         contributingFactors       = contributingFactors       != null ? List.copyOf(contributingFactors)       : List.of();
         dataQualityWarnings       = dataQualityWarnings       != null ? List.copyOf(dataQualityWarnings)       : List.of();
         clinicalKnowledgeEvidence = clinicalKnowledgeEvidence != null ? List.copyOf(clinicalKnowledgeEvidence) : List.of();
-        // executionTrace is intentionally nullable — it is observability metadata, not clinical data
+        // executionTrace and explanation are intentionally nullable — observability/LLM metadata only
         if (!SAFETY_DISCLAIMER.equals(safetyDisclaimer)) {
             throw new IllegalArgumentException(
                     "Safety disclaimer must match the canonical text");

@@ -44,6 +44,7 @@ class Phase11SupervisorTest {
     @Mock private TwinAnalysisAgent         twinAgent;
     @Mock private PredictionAnalysisAgent   predictionAgent;
     @Mock private RiskEvidenceAgent         evidenceAgent;
+    @Mock private InsightExplanationAgent   explanationAgent;
     @Mock private InsightVerificationAgent  verificationAgent;
     @Mock private InsightAuditWriter        auditWriter;
 
@@ -82,8 +83,10 @@ class Phase11SupervisorTest {
     void setUp() {
         useCase = new GenerateClinicalInsightUseCase(
                 twinAgent, predictionAgent, evidenceAgent,
-                verificationAgent, auditWriter);
+                explanationAgent, verificationAgent, auditWriter);
         patientId = PatientId.random();
+        lenient().when(explanationAgent.explain(any(), any(), any(), any()))
+                .thenReturn(com.glucotwin.domain.insight.InsightExplanationResult.unavailable());
     }
 
     // ── Test 1: Verification warnings reach the final response ────────────────

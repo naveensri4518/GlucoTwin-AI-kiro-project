@@ -16,6 +16,7 @@ public class GlucoTwinProperties {
     private MlService mlService = new MlService();
     private Security security = new Security();
     private Data data = new Data();
+    private Ai ai = new Ai();
 
     @Getter @Setter
     public static class Twin {
@@ -53,6 +54,20 @@ public class GlucoTwinProperties {
     @Getter @Setter
     public static class Data {
         private double clinicalWarningThresholdMmol = 20.0;
+    }
+
+    /** Phase 13: LLM explanation layer configuration. */
+    @Getter @Setter
+    public static class Ai {
+        private Explanation explanation = new Explanation();
+
+        @Getter @Setter
+        public static class Explanation {
+            /** Master switch — set to false to disable LLM calls entirely. */
+            private boolean enabled = true;
+            /** Hard timeout for a single LLM call (seconds). */
+            private long timeoutSeconds = 5;
+        }
     }
 
     /** Converts config to domain value object. */

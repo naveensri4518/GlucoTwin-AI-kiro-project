@@ -271,10 +271,21 @@ class Phase9KnowledgeRetrievalTest {
             public void write(com.glucotwin.domain.shared.PatientId p,
                               ClinicalInsightResponse r) { /* no-op */ }
         };
+        // Explanation agent is a no-op for this unit test (no LLM)
+        InsightExplanationAgent noOpExplanationAgent = new InsightExplanationAgent(null, null) {
+            @Override
+            public com.glucotwin.domain.insight.InsightExplanationResult explain(
+                    com.glucotwin.domain.insight.TwinAnalysisResult t,
+                    com.glucotwin.domain.insight.PredictionAnalysisResult p,
+                    com.glucotwin.domain.insight.EvidenceAggregationResult e,
+                    String q) {
+                return com.glucotwin.domain.insight.InsightExplanationResult.unavailable();
+            }
+        };
         GenerateClinicalInsightUseCase useCase =
                 new GenerateClinicalInsightUseCase(
                         twinAgent, predictionAgent, evidenceAgent,
-                        verAgent, noOpAuditWriter);
+                        noOpExplanationAgent, verAgent, noOpAuditWriter);
 
         ClinicalInsightResponse response = useCase.execute(patientId, "test question");
 

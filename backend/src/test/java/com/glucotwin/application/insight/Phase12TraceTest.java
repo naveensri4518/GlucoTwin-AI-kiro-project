@@ -43,6 +43,7 @@ class Phase12TraceTest {
     @Mock private TwinAnalysisAgent         twinAgent;
     @Mock private PredictionAnalysisAgent   predictionAgent;
     @Mock private RiskEvidenceAgent         evidenceAgent;
+    @Mock private InsightExplanationAgent   explanationAgent;
     @Mock private InsightVerificationAgent  verificationAgent;
     @Mock private InsightAuditWriter        auditWriter;
 
@@ -78,10 +79,12 @@ class Phase12TraceTest {
     void setUp() {
         useCase = new GenerateClinicalInsightUseCase(
                 twinAgent, predictionAgent, evidenceAgent,
-                verificationAgent, auditWriter);
+                explanationAgent, verificationAgent, auditWriter);
         patientId = PatientId.random();
         lenient().when(verificationAgent.verify(any(), any())).thenReturn(List.of());
         lenient().doNothing().when(auditWriter).write(any(), any());
+        lenient().when(explanationAgent.explain(any(), any(), any(), any()))
+                .thenReturn(com.glucotwin.domain.insight.InsightExplanationResult.unavailable());
     }
 
     // ── Test 1: Complete trace contains all expected stages ───────────────────
@@ -96,7 +99,7 @@ class Phase12TraceTest {
 
         AgentExecutionTrace trace = response.executionTrace();
         assertThat(trace).isNotNull();
-        assertThat(trace.steps()).hasSize(6); // Twin, Prediction, Evidence, Verify, Assembly, Audit
+        assertThat(trace.steps()).hasSize(7); // Twin, Prediction, Evidence, Explanation, Verify, Assembly, Audit
 
         List<String> stageNames = trace.steps().stream()
                 .map(AgentStepTrace::agentName).toList();
@@ -104,6 +107,7 @@ class Phase12TraceTest {
                 GenerateClinicalInsightUseCase.STAGE_TWIN,
                 GenerateClinicalInsightUseCase.STAGE_PREDICTION,
                 GenerateClinicalInsightUseCase.STAGE_EVIDENCE,
+                GenerateClinicalInsightUseCase.STAGE_EXPLANATION,
                 GenerateClinicalInsightUseCase.STAGE_VERIFY,
                 GenerateClinicalInsightUseCase.STAGE_ASSEMBLY,
                 GenerateClinicalInsightUseCase.STAGE_AUDIT);

@@ -5,6 +5,7 @@ import com.glucotwin.domain.insight.AgentResult;
 import com.glucotwin.domain.insight.AgentStepTrace;
 import com.glucotwin.domain.insight.ClinicalInsightResponse;
 import com.glucotwin.domain.insight.EvidenceAggregationResult;
+import com.glucotwin.domain.insight.InsightExplanationResult;
 import com.glucotwin.domain.insight.InsightGenerationException;
 import com.glucotwin.domain.insight.PredictionAnalysisResult;
 import com.glucotwin.domain.insight.TwinAnalysisResult;
@@ -20,29 +21,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Agent Supervisor — orchestrates the full Phase 12 clinical insight pipeline.
+ * Agent Supervisor — orchestrates the full Phase 13 clinical insight pipeline.
  *
- * <p>Pipeline (Phase 12):
+ * <p>Pipeline (Phase 13):
  * <ol>
- *   <li>{@link TwinAnalysisAgent}         — reads OBSERVED twin state (read-only)
- *   <li>{@link PredictionAnalysisAgent}   — reads latest PREDICTED risk (read-only)
- *   <li>{@link RiskEvidenceAgent}         — aggregates evidence + retrieves CLINICAL_KNOWLEDGE
- *   <li>{@link InsightVerificationAgent}  — deterministic consistency checks (non-blocking)
- *   <li>Insight Assembly                  — constructs {@link ClinicalInsightResponse}
- *   <li>{@link InsightAuditWriter}        — durable audit in its own REQUIRES_NEW transaction
+ *   <li>{@link TwinAnalysisAgent}          — reads OBSERVED twin state (read-only)
+ *   <li>{@link PredictionAnalysisAgent}    — reads latest PREDICTED risk (read-only)
+ *   <li>{@link RiskEvidenceAgent}          — aggregates evidence + retrieves CLINICAL_KNOWLEDGE
+ *   <li>{@link InsightExplanationAgent}    — grounded LLM explanation (NON-FATAL, nullable)
+ *   <li>{@link InsightVerificationAgent}   — deterministic consistency checks (non-blocking)
+ *   <li>Insight Assembly                   — constructs {@link ClinicalInsightResponse}
+ *   <li>{@link InsightAuditWriter}         — durable audit in its own REQUIRES_NEW transaction
  * </ol>
  *
- * <p>Phase 12 additions:
+ * <p>Phase 13 — LLM explanation rules:
  * <ul>
- *   <li>Each stage is timed via {@code System.nanoTime()} and recorded as an
- *       {@link AgentStepTrace} (SUCCESS / FAILURE / SKIPPED).
- *   <li>The full {@link AgentExecutionTrace} is attached to the response.
- *   <li>Audit timing is tracked separately: {@code totalDurationMs} covers the
- *       clinical insight pipeline up to and including insight assembly. The audit
- *       step duration is recorded in the trace but is NOT included in
- *       {@code totalDurationMs} because the audit runs in a separate REQUIRES_NEW
- *       transaction and its latency must not inflate the perceived insight latency.
- *   <li>No patient PII is stored in trace detail strings.
+ *   <li>The LLM is called AFTER evidence aggregation and BEFORE verification.
+ *   <li>The LLM receives only the provenance-labelled {@code evidenceSummary} string —
+ *       not raw patient data.
+ *   <li>LLM failure/timeout is always non-fatal — pipeline continues with {@code explanation=null}.
+ *   <li>The LLM never affects {@code spikeProbability}, {@code riskCategory},
+ *       {@code confidenceInterval}, or any provenance label.
+ *   <li>All numeric clinical values remain sourced exclusively from the XGBoost pipeline.
  * </ul>
  *
  * <p>Transaction strategy:
@@ -58,24 +58,26 @@ import java.util.List;
 public class GenerateClinicalInsightUseCase {
 
     // Stage name constants used in AgentStepTrace — must match frontend display labels
-    static final String STAGE_TWIN       = "Twin Analysis";
-    static final String STAGE_PREDICTION = "Prediction Analysis";
-    static final String STAGE_EVIDENCE   = "Risk Evidence";
-    static final String STAGE_VERIFY     = "Verification";
-    static final String STAGE_ASSEMBLY   = "Insight Assembly";
-    static final String STAGE_AUDIT      = "Audit";
+    static final String STAGE_TWIN        = "Twin Analysis";
+    static final String STAGE_PREDICTION  = "Prediction Analysis";
+    static final String STAGE_EVIDENCE    = "Risk Evidence";
+    static final String STAGE_EXPLANATION = "LLM Explanation";
+    static final String STAGE_VERIFY      = "Verification";
+    static final String STAGE_ASSEMBLY    = "Insight Assembly";
+    static final String STAGE_AUDIT       = "Audit";
 
     private final TwinAnalysisAgent         twinAgent;
     private final PredictionAnalysisAgent   predictionAgent;
     private final RiskEvidenceAgent         evidenceAgent;
+    private final InsightExplanationAgent   explanationAgent;
     private final InsightVerificationAgent  verificationAgent;
     private final InsightAuditWriter        auditWriter;
 
     @Transactional(readOnly = true)
     public ClinicalInsightResponse execute(PatientId patientId, String question) {
-        final String traceId      = MDC.get("traceId");
-        final Instant startedAt   = Instant.now();
-        final long pipelineStart  = System.nanoTime();
+        final String traceId     = MDC.get("traceId");
+        final Instant startedAt  = Instant.now();
+        final long pipelineStart = System.nanoTime();
 
         log.info("[AgentSupervisor] Starting clinical insight for patient={} traceId='{}'",
                 patientId.value(), traceId);
@@ -92,6 +94,7 @@ public class GenerateClinicalInsightUseCase {
             steps.add(AgentStepTrace.failure(STAGE_TWIN, twinMs, f.reason()));
             steps.add(AgentStepTrace.skipped(STAGE_PREDICTION));
             steps.add(AgentStepTrace.skipped(STAGE_EVIDENCE));
+            steps.add(AgentStepTrace.skipped(STAGE_EXPLANATION));
             steps.add(AgentStepTrace.skipped(STAGE_VERIFY));
             steps.add(AgentStepTrace.skipped(STAGE_ASSEMBLY));
             steps.add(AgentStepTrace.skipped(STAGE_AUDIT));
@@ -112,6 +115,7 @@ public class GenerateClinicalInsightUseCase {
                     (AgentResult.Failure<PredictionAnalysisResult>) predResult;
             steps.add(AgentStepTrace.failure(STAGE_PREDICTION, predMs, f.reason()));
             steps.add(AgentStepTrace.skipped(STAGE_EVIDENCE));
+            steps.add(AgentStepTrace.skipped(STAGE_EXPLANATION));
             steps.add(AgentStepTrace.skipped(STAGE_VERIFY));
             steps.add(AgentStepTrace.skipped(STAGE_ASSEMBLY));
             steps.add(AgentStepTrace.skipped(STAGE_AUDIT));
@@ -122,7 +126,7 @@ public class GenerateClinicalInsightUseCase {
         steps.add(AgentStepTrace.success(STAGE_PREDICTION, predMs,
                 "Latest prediction analyzed — risk=" + pred.riskCategory().name()));
 
-        // ── Step 3: Risk Evidence (includes knowledge retrieval internally) ───
+        // ── Step 3: Risk Evidence (includes knowledge retrieval) ──────────────
         long t2 = System.nanoTime();
         AgentResult<EvidenceAggregationResult> evidenceResult =
                 evidenceAgent.aggregate(twin, pred);
@@ -132,6 +136,7 @@ public class GenerateClinicalInsightUseCase {
             AgentResult.Failure<EvidenceAggregationResult> f =
                     (AgentResult.Failure<EvidenceAggregationResult>) evidenceResult;
             steps.add(AgentStepTrace.failure(STAGE_EVIDENCE, evidenceMs, f.reason()));
+            steps.add(AgentStepTrace.skipped(STAGE_EXPLANATION));
             steps.add(AgentStepTrace.skipped(STAGE_VERIFY));
             steps.add(AgentStepTrace.skipped(STAGE_ASSEMBLY));
             steps.add(AgentStepTrace.skipped(STAGE_AUDIT));
@@ -144,24 +149,39 @@ public class GenerateClinicalInsightUseCase {
                 "Evidence aggregation completed — retrieved " + knowledgeCount
                 + " clinical knowledge item(s)"));
 
-        // ── Step 4: Verification ──────────────────────────────────────────────
+        // ── Step 4: LLM Explanation (NON-FATAL — never blocks pipeline) ───────
         long t3 = System.nanoTime();
+        InsightExplanationResult explanationResult =
+                explanationAgent.explain(twin, pred, evidence, question);
+        long explanationMs = msElapsed(t3);
+
+        String explanationText = null;
+        if (explanationResult.hasContent()) {
+            explanationText = explanationResult.explanation();
+            steps.add(AgentStepTrace.success(STAGE_EXPLANATION, explanationMs,
+                    "Explanation generated — model=" + explanationResult.modelId()
+                    + " tokens=" + (explanationResult.promptTokens()
+                                  + explanationResult.completionTokens())));
+        } else {
+            steps.add(AgentStepTrace.success(STAGE_EXPLANATION, explanationMs,
+                    "Explanation unavailable (disabled, timed out, or LLM error)"));
+        }
+
+        // ── Step 5: Verification ──────────────────────────────────────────────
+        long t4 = System.nanoTime();
         List<String> verificationWarnings = verificationAgent.verify(twin, pred);
-        long verifyMs = msElapsed(t3);
+        long verifyMs = msElapsed(t4);
         steps.add(AgentStepTrace.success(STAGE_VERIFY, verifyMs,
                 "Verification completed with " + verificationWarnings.size() + " warning(s)"));
 
-        // ── Step 5: Insight Assembly ──────────────────────────────────────────
+        // ── Step 6: Insight Assembly ──────────────────────────────────────────
         List<String> allWarnings = new ArrayList<>(evidence.combinedDataQualityWarnings());
         allWarnings.addAll(verificationWarnings);
 
-        // totalDurationMs covers steps 1–5 (clinical pipeline only, before audit)
+        // totalDurationMs covers the clinical pipeline (steps 1–6, before audit)
         long clinicalPipelineMs = msElapsed(pipelineStart);
 
-        long t4 = System.nanoTime();
-        AgentExecutionTrace partialTrace = new AgentExecutionTrace(
-                traceId, startedAt, clinicalPipelineMs, steps);
-
+        long t5 = System.nanoTime();
         ClinicalInsightResponse response = new ClinicalInsightResponse(
                 patientId.value(),
                 startedAt,
@@ -178,30 +198,28 @@ public class GenerateClinicalInsightUseCase {
                 ClinicalInsightResponse.PROVENANCE_LABEL,
                 ClinicalInsightResponse.SAFETY_DISCLAIMER,
                 evidence.retrievedKnowledge(),
-                null); // trace attached after audit step below
+                null,          // trace attached after audit step below
+                explanationText);
 
-        long assemblyMs = msElapsed(t4);
+        long assemblyMs = msElapsed(t5);
         steps.add(AgentStepTrace.success(STAGE_ASSEMBLY, assemblyMs,
                 "Clinical insight response constructed"));
 
-        log.info("[AgentSupervisor] Insight generated — patient={} risk={} pipelineMs={} verificationWarnings={} knowledge={}",
+        log.info("[AgentSupervisor] Insight generated — patient={} risk={} pipelineMs={} "
+                + "explanation={} verificationWarnings={} knowledge={}",
                 patientId.value(), pred.riskCategory(), clinicalPipelineMs,
-                verificationWarnings.size(), knowledgeCount);
+                explanationResult.hasContent(), verificationWarnings.size(), knowledgeCount);
 
-        // ── Step 6: Audit (REQUIRES_NEW transaction — non-fatal, timed separately) ──
-        long t5 = System.nanoTime();
+        // ── Step 7: Audit (REQUIRES_NEW transaction — non-fatal) ─────────────
+        long t6 = System.nanoTime();
         auditWriter.write(patientId, response);
-        long auditMs = msElapsed(t5);
+        long auditMs = msElapsed(t6);
         steps.add(AgentStepTrace.success(STAGE_AUDIT, auditMs, "Audit record persisted"));
 
-        // ── Assemble final trace and rebuild response with it ─────────────────
-        // totalDurationMs = clinical pipeline only (excludes audit latency).
-        // Audit duration IS visible in the trace steps for full observability,
-        // but does not inflate the headline totalDurationMs seen by clinicians.
+        // ── Assemble final trace and rebuild response ─────────────────────────
         AgentExecutionTrace finalTrace = new AgentExecutionTrace(
                 traceId, startedAt, clinicalPipelineMs, steps);
 
-        // Rebuild response with the complete trace attached
         return new ClinicalInsightResponse(
                 response.patientId(),
                 response.generatedAt(),
@@ -218,12 +236,11 @@ public class GenerateClinicalInsightUseCase {
                 response.dataProvenance(),
                 response.safetyDisclaimer(),
                 response.clinicalKnowledgeEvidence(),
-                finalTrace);
+                finalTrace,
+                response.explanation());
     }
 
-    /** Convert nanoTime delta to milliseconds, safely clamped to >= 0. */
     private static long msElapsed(long startNano) {
-        long delta = System.nanoTime() - startNano;
-        return Math.max(0L, delta / 1_000_000L);
+        return Math.max(0L, (System.nanoTime() - startNano) / 1_000_000L);
     }
 }

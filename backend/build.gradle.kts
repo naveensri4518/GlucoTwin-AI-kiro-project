@@ -40,6 +40,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
+    // Spring AI — OpenAI adapter (Phase 13: controlled LLM explanation layer)
+    // Artifact was renamed from spring-ai-openai-spring-boot-starter at GA.
+    // spring-ai-starter-model-openai:1.0.1 is the current GA for Spring Boot 3.3.
+    implementation(platform("org.springframework.ai:spring-ai-bom:1.0.1"))
+    implementation("org.springframework.ai:spring-ai-starter-model-openai:1.0.1")
+
     // OpenAPI / Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 

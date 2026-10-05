@@ -65,7 +65,8 @@ class InsightAuditWriterTest {
                 ClinicalInsightResponse.PROVENANCE_LABEL,
                 ClinicalInsightResponse.SAFETY_DISCLAIMER,
                 knowledge,
-                null); // executionTrace not needed for audit tests
+                null,   // executionTrace not needed for audit tests
+                null);  // explanation not needed for audit tests
     }
 
     @BeforeEach

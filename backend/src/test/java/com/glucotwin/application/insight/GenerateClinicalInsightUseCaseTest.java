@@ -52,6 +52,7 @@ class GenerateClinicalInsightUseCaseTest {
     @Mock private TwinAnalysisAgent twinAgent;
     @Mock private PredictionAnalysisAgent predictionAgent;
     @Mock private RiskEvidenceAgent evidenceAgent;
+    @Mock private InsightExplanationAgent explanationAgent;
     @Mock private InsightVerificationAgent verificationAgent;
     @Mock private InsightAuditWriter auditWriter;
 
@@ -95,12 +96,14 @@ class GenerateClinicalInsightUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new GenerateClinicalInsightUseCase(twinAgent, predictionAgent, evidenceAgent,
-                verificationAgent, auditWriter);
+        useCase = new GenerateClinicalInsightUseCase(
+                twinAgent, predictionAgent, evidenceAgent,
+                explanationAgent, verificationAgent, auditWriter);
         patientId = PatientId.random();
-        // Default: verification returns no warnings, audit is a no-op
         lenient().when(verificationAgent.verify(any(), any())).thenReturn(List.of());
         lenient().doNothing().when(auditWriter).write(any(), any());
+        lenient().when(explanationAgent.explain(any(), any(), any(), any()))
+                .thenReturn(com.glucotwin.domain.insight.InsightExplanationResult.unavailable());
     }
 
     // ── Test 1: Supervisor orchestration — full happy path ────────────────────

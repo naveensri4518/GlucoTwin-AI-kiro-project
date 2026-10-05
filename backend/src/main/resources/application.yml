@@ -59,3 +59,22 @@ glucotwin:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
   data:
     clinical-warning-threshold-mmol: ${CLINICAL_WARNING_THRESHOLD:20.0}
+
+# Phase 13: LLM explanation layer
+# The API key must be supplied via environment variable — never hardcoded.
+# Set OPENAI_API_KEY in your environment or .env file (not committed to VCS).
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${AI_EXPLANATION_MODEL:gpt-4o-mini}
+          temperature: ${AI_EXPLANATION_TEMPERATURE:0.2}
+          max-tokens: ${AI_EXPLANATION_MAX_TOKENS:400}
+
+glucotwin:
+  ai:
+    explanation:
+      enabled: ${AI_EXPLANATION_ENABLED:true}
+      timeout-seconds: ${AI_EXPLANATION_TIMEOUT_SECONDS:5}

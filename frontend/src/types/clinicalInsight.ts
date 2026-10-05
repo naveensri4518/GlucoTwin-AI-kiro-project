@@ -106,4 +106,11 @@ export interface ClinicalInsightResponse {
   clinicalKnowledgeEvidence: ClinicalKnowledgeEvidence[]
   /** Phase 12: pipeline execution trace. Absent when backend did not capture it. */
   executionTrace?: AgentExecutionTrace | null
+  /**
+   * Phase 13: LLM-generated explanation paragraph.
+   * Absent/null when LLM is disabled, timed out, or failed.
+   * Never contains fabricated numeric clinical values — those are in spikeProbability/riskCategory.
+   * For clinical decision support only — not a diagnosis or recommendation.
+   */
+  explanation?: string | null
 }
