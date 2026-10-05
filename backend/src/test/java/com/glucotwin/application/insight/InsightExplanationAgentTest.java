@@ -250,4 +250,43 @@ class InsightExplanationAgentTest {
 
         assertThat(result.explanation()).isEqualTo("The risk is elevated.");
     }
+
+    // ── Phase 14: System Prompt Safety Regression Guards ──────────────────────
+    // These tests protect against accidental weakening of the Phase 13 safety prompt.
+    // They inspect the SYSTEM_PROMPT constant — no real LLM calls.
+
+    @Test
+    void systemPrompt_containsExplicitNoDiagnoseRule() throws Exception {
+        var field = InsightExplanationAgent.class.getDeclaredField("SYSTEM_PROMPT");
+        field.setAccessible(true);
+        String prompt = (String) field.get(null);
+
+        assertThat(prompt)
+                .as("System prompt must contain an explicit 'Do NOT diagnose' rule")
+                .containsIgnoringCase("Do NOT diagnose");
+    }
+
+    @Test
+    void systemPrompt_containsExplicitNoPrescribeRule() throws Exception {
+        var field = InsightExplanationAgent.class.getDeclaredField("SYSTEM_PROMPT");
+        field.setAccessible(true);
+        String prompt = (String) field.get(null);
+
+        assertThat(prompt)
+                .as("System prompt must contain an explicit 'Do NOT prescribe' rule")
+                .containsIgnoringCase("Do NOT prescribe");
+    }
+
+    @Test
+    void systemPrompt_containsExplicitNoFabricateNumericValuesRule() throws Exception {
+        var field = InsightExplanationAgent.class.getDeclaredField("SYSTEM_PROMPT");
+        field.setAccessible(true);
+        String prompt = (String) field.get(null);
+
+        assertThat(prompt)
+                .as("System prompt must contain explicit prohibition on inventing/fabricating numeric values")
+                .containsIgnoringCase("fabricate");
+        // Also check for the related terms to ensure the rule is substantive
+        assertThat(prompt).containsIgnoringCase("numeric");
+    }
 }

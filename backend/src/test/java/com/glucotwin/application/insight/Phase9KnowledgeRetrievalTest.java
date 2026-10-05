@@ -317,4 +317,52 @@ class Phase9KnowledgeRetrievalTest {
                     .isEqualTo(ClinicalKnowledgeEvidence.PROVENANCE_CLINICAL_KNOWLEDGE);
         });
     }
+
+    // ── Phase 14: Golden Mapping Tests ────────────────────────────────────────
+
+    /**
+     * Golden topic→knowledgeId mapping.
+     * Verifies that known feature names map to their expected corpus entries.
+     * If a corpus edit breaks expected retrieval, these tests catch the regression.
+     */
+    @org.junit.jupiter.params.ParameterizedTest(name = "topic ''{0}'' should include {1}")
+    @org.junit.jupiter.params.provider.CsvSource({
+        "cgm_current,   K004",
+        "hba1c_latest,  K005",
+        "step_count,    K002",
+        "sleep_duration,K003",
+        "bmi,           K006"
+    })
+    void retriever_knownFeatureTopic_returnsExpectedCorpusEntry(
+            String topic, String expectedKnowledgeId) {
+        List<ClinicalKnowledgeEvidence> results =
+                retriever.retrieve(List.of(topic.trim()), 5);
+
+        assertThat(results)
+                .as("Topic '%s' should return at least one result", topic)
+                .isNotEmpty();
+        assertThat(results)
+                .as("Topic '%s' should include corpus entry %s", topic, expectedKnowledgeId)
+                .anyMatch(e -> e.knowledgeId().equals(expectedKnowledgeId.trim()));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "golden entry {1} should have CLINICAL_KNOWLEDGE provenance")
+    @org.junit.jupiter.params.provider.CsvSource({
+        "cgm_current,   K004",
+        "hba1c_latest,  K005",
+        "step_count,    K002",
+        "sleep_duration,K003",
+        "bmi,           K006"
+    })
+    void retriever_goldenEntries_allHaveClinicialKnowledgeProvenance(
+            String topic, String expectedKnowledgeId) {
+        List<ClinicalKnowledgeEvidence> results =
+                retriever.retrieve(List.of(topic.trim()), 5);
+
+        results.stream()
+               .filter(e -> e.knowledgeId().equals(expectedKnowledgeId.trim()))
+               .forEach(item ->
+                   assertThat(item.provenance())
+                       .isEqualTo(ClinicalKnowledgeEvidence.PROVENANCE_CLINICAL_KNOWLEDGE));
+    }
 }

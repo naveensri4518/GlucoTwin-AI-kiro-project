@@ -93,6 +93,18 @@ tasks.register<Test>("integrationTest") {
     group = "verification"
 }
 
+// Phase 14: Evaluation, golden scenarios, provenance properties, and simulation isolation
+// Fast, deterministic, no Docker required.
+tasks.register<Test>("evaluationTest") {
+    useJUnitPlatform {
+        includeEngines("junit-jupiter", "jqwik")
+        includeTags("evaluation")
+    }
+    jvmArgs("-XX:+EnableDynamicAgentLoading")
+    description = "Runs GlucoTwin evaluation and scenario tests"
+    group = "verification"
+}
+
 tasks.named<BootJar>("bootJar") {
     archiveFileName.set("glucotwin-backend.jar")
 }
