@@ -33,16 +33,16 @@ public class GlucosePredictionJpaEntity {
     @Column(name = "prediction_horizon_hrs", nullable = false)
     private int predictionHorizonHrs;
 
-    @Column(name = "spike_probability")
+    @Column(name = "spike_probability", columnDefinition = "numeric")
     private Double spikeProbability;
 
     @Column(name = "risk_category", length = 20)
     private String riskCategory;
 
-    @Column(name = "ci_low")
+    @Column(name = "ci_low", columnDefinition = "numeric")
     private Double ciLow;
 
-    @Column(name = "ci_high")
+    @Column(name = "ci_high", columnDefinition = "numeric")
     private Double ciHigh;
 
     @JdbcTypeCode(SqlTypes.JSON)

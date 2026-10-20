@@ -41,14 +41,26 @@ public class RedisStreamConfig {
      * For the prototype, uses a simple listener on the stream.
      */
     @Bean
-    public StreamMessageListenerContainer<String, ?> wearableStreamContainer(
+    public StreamMessageListenerContainer<String, org.springframework.data.redis.connection.stream.MapRecord<String, String, String>> wearableStreamContainer(
             RedisConnectionFactory connectionFactory) {
 
         var options = StreamMessageListenerContainer.StreamMessageListenerContainerOptions
-                .builder()
+                .<String, org.springframework.data.redis.connection.stream.MapRecord<String, String, String>>builder()
                 .pollTimeout(Duration.ofMillis(100))
                 .build();
 
-        return StreamMessageListenerContainer.create(connectionFactory, options);
+        var container = StreamMessageListenerContainer.create(connectionFactory, options);
+
+        try {
+            container.receive(
+                    StreamOffset.create(com.glucotwin.infrastructure.messaging.RedisWearableEventPublisher.STREAM_KEY, ReadOffset.latest()),
+                    wearableEventConsumer);
+            container.start();
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(RedisStreamConfig.class)
+                    .warn("Could not start Redis stream listener container: {}", e.getMessage());
+        }
+
+        return container;
     }
 }

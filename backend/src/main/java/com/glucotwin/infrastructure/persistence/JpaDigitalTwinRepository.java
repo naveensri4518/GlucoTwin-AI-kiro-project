@@ -31,14 +31,18 @@ public class JpaDigitalTwinRepository implements DigitalTwinRepository {
 
     @Override
     public DigitalTwinState save(DigitalTwinState state) {
-        var entity = DigitalTwinStateMapper.toEntity(state);
+        var existing = jpaRepo.findById(state.getPatientId().value())
+                .orElseGet(com.glucotwin.infrastructure.persistence.entity.DigitalTwinStateJpaEntity::new);
+        DigitalTwinStateMapper.copyToEntity(state, existing);
         try {
-            var saved = jpaRepo.save(entity);
+            var saved = jpaRepo.save(existing);
             return DigitalTwinStateMapper.toDomain(saved);
         } catch (OptimisticLockingFailureException ex) {
-            // Retry once
-            log.warn("Optimistic lock conflict for patient {}, retrying once", state.getPatientId());
-            var saved = jpaRepo.save(entity);
+            log.warn("Optimistic lock conflict for patient {}, reloading and retrying", state.getPatientId());
+            existing = jpaRepo.findById(state.getPatientId().value())
+                    .orElseGet(com.glucotwin.infrastructure.persistence.entity.DigitalTwinStateJpaEntity::new);
+            DigitalTwinStateMapper.copyToEntity(state, existing);
+            var saved = jpaRepo.save(existing);
             return DigitalTwinStateMapper.toDomain(saved);
         }
     }

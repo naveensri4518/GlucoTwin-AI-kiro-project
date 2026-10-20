@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class PatientController {
 
     private final ListPatientsUseCase listPatientsUseCase;
+    private final com.glucotwin.domain.patient.PatientRepository patientRepository;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('CLINICIAN','ADMIN')")
@@ -36,5 +37,15 @@ public class PatientController {
         Page<PatientSummaryResponse> result = listPatientsUseCase.execute(pageable)
                 .map(PatientSummaryResponse::from);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{patientId}")
+    @PreAuthorize("hasAnyRole('CLINICIAN','ADMIN')")
+    @Operation(summary = "Get a single registered patient by ID")
+    public ResponseEntity<PatientSummaryResponse> getById(@PathVariable java.util.UUID patientId) {
+        return patientRepository.findById(com.glucotwin.domain.shared.PatientId.of(patientId))
+                .map(PatientSummaryResponse::from)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new com.glucotwin.domain.shared.ResourceNotFoundException("Patient", patientId.toString()));
     }
 }

@@ -39,11 +39,15 @@ export interface Prediction {
 /** Spring Page<Prediction> — GET /api/v1/patients/{id}/predictions */
 export interface PredictionPage {
   content: Prediction[]
-  page: {
-    size: number
-    number: number
-    totalElements: number
-    totalPages: number
+  totalElements?: number
+  totalPages?: number
+  size?: number
+  number?: number
+  page?: {
+    size?: number
+    number?: number
+    totalElements?: number
+    totalPages?: number
   }
 }
 

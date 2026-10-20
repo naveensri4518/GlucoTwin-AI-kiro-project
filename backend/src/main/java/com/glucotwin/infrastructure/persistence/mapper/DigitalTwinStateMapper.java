@@ -15,13 +15,14 @@ public final class DigitalTwinStateMapper {
 
     private DigitalTwinStateMapper() {}
 
-    public static DigitalTwinStateJpaEntity toEntity(DigitalTwinState domain) {
-        var entity = new DigitalTwinStateJpaEntity();
+    public static void copyToEntity(DigitalTwinState domain, DigitalTwinStateJpaEntity entity) {
         entity.setPatientId(domain.getPatientId().value());
         entity.setTwinVersion(domain.getTwinVersion());
         entity.setStatus(domain.getStatus().name());
         entity.setLastUpdatedAt(domain.getLastUpdatedAt());
-        entity.setCreatedAt(domain.getCreatedAt());
+        if (entity.getCreatedAt() == null) {
+            entity.setCreatedAt(domain.getCreatedAt());
+        }
 
         DynamicLayer dyn = domain.getDynamicLayer();
         if (dyn != null) {
@@ -42,6 +43,11 @@ public final class DigitalTwinStateMapper {
             // Data quality flags
             entity.setDataQualityFlags(dyn.dataQualityWarnings().toArray(new String[0]));
         }
+    }
+
+    public static DigitalTwinStateJpaEntity toEntity(DigitalTwinState domain) {
+        var entity = new DigitalTwinStateJpaEntity();
+        copyToEntity(domain, entity);
         return entity;
     }
 

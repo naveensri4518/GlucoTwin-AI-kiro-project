@@ -9,7 +9,7 @@ backend/.gradle/
 backend/.classpath
 backend/.project
 backend/.settings/
-backend/out/
+backend/bin/
 *.class
 *.jar
 *.war

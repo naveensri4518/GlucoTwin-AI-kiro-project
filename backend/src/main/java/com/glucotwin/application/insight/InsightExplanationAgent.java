@@ -5,11 +5,11 @@ import com.glucotwin.domain.insight.InsightExplanationResult;
 import com.glucotwin.domain.insight.PredictionAnalysisResult;
 import com.glucotwin.domain.insight.TwinAnalysisResult;
 import com.glucotwin.infrastructure.config.GlucoTwinProperties;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -41,7 +41,6 @@ import java.util.concurrent.TimeoutException;
  * {@link InsightVerificationAgent} can still apply consistency checks to the full response.
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class InsightExplanationAgent {
 
@@ -80,12 +79,20 @@ public class InsightExplanationAgent {
     private final ChatClient chatClient;
     private final GlucoTwinProperties properties;
 
+    public InsightExplanationAgent(
+            @Autowired(required = false) ChatClient chatClient,
+            GlucoTwinProperties properties) {
+        this.chatClient = chatClient;
+        this.properties = properties;
+    }
+
     /**
      * Generate a grounded LLM explanation for the assembled evidence.
      *
      * <p>Returns {@link InsightExplanationResult#unavailable()} when:
      * <ul>
      *   <li>Explanation is disabled via config ({@code glucotwin.ai.explanation.enabled=false})
+     *   <li>ChatClient is null (e.g. OpenAI not configured)
      *   <li>LLM call times out (> {@code glucotwin.ai.explanation.timeout-seconds})
      *   <li>LLM call throws any exception
      * </ul>
@@ -102,8 +109,8 @@ public class InsightExplanationAgent {
             EvidenceAggregationResult evidence,
             String question) {
 
-        if (!properties.getAi().getExplanation().isEnabled()) {
-            log.debug("[{}] LLM explanation disabled by configuration", AGENT_NAME);
+        if (!properties.getAi().getExplanation().isEnabled() || chatClient == null) {
+            log.debug("[{}] LLM explanation disabled by configuration or ChatClient unavailable", AGENT_NAME);
             return InsightExplanationResult.unavailable();
         }
 

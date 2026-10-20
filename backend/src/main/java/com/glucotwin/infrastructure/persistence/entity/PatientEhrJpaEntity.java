@@ -32,16 +32,16 @@ public class PatientEhrJpaEntity {
     @Column(name = "sex", nullable = false, length = 10)
     private String sex;
 
-    @Column(name = "bmi")
+    @Column(name = "bmi", columnDefinition = "numeric")
     private Double bmi;
 
     @Column(name = "diabetes_onset_date", nullable = false)
     private LocalDate diabetesOnsetDate;
 
-    @Column(name = "hba1c")
+    @Column(name = "hba1c", columnDefinition = "numeric")
     private Double hba1c;
 
-    @Column(name = "fasting_glucose")
+    @Column(name = "fasting_glucose", columnDefinition = "numeric")
     private Double fastingGlucose;
 
     @JdbcTypeCode(SqlTypes.JSON)

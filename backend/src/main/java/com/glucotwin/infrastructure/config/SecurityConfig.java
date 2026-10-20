@@ -49,7 +49,7 @@ public class SecurityConfig {
         String origins = properties.getSecurity().getAllowedOrigins();
         config.setAllowedOrigins(List.of(origins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Trace-Id"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Trace-Id", "X-Dev-Auth"));
         config.setAllowCredentials(true);
 
         var source = new UrlBasedCorsConfigurationSource();

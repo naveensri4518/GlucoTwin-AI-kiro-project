@@ -1,6 +1,8 @@
 import { Outlet } from 'react-router-dom'
+import { ErrorBoundary } from '../ErrorBoundary'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
+import { IconShield } from '@/components/common/Icons'
 
 /**
  * Persistent application shell — sidebar + top bar + scrollable main content.
@@ -8,28 +10,40 @@ import TopBar from './TopBar'
  */
 export default function AppShell() {
   return (
-    <div className="flex h-screen overflow-hidden bg-surface text-slate-100">
+    <div className="flex h-screen w-screen overflow-hidden bg-bg text-text-primary">
+      {/* Sidebar Navigation */}
       <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <TopBar />
 
         <main
-          className="flex-1 overflow-y-auto p-6"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8"
           role="main"
-          aria-label="Main content"
+          aria-label="Clinical workspace main content"
         >
-          {/* Safety disclaimer — always visible as required by product.md */}
-          <div
-            className="mb-4 rounded border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-300"
-            role="status"
-            aria-live="polite"
-          >
-            <strong>Research &amp; Decision Support Only.</strong> Not a diagnostic system.
-            All predictions are probabilistic estimates. Always apply clinical judgment.
-          </div>
+          <div className="mx-auto max-w-7xl space-y-6">
+            {/* Regulatory Safety Disclaimer — persistent across all views */}
+            <aside
+              className="flex items-center gap-3 rounded-xl border border-status-warning/30 bg-status-warning/10 px-4 py-2.5 text-xs text-status-warning shadow-sm"
+              role="status"
+              aria-live="polite"
+            >
+              <IconShield size={16} className="flex-shrink-0 text-status-warning" />
+              <p className="leading-snug">
+                <strong className="font-semibold uppercase tracking-wider text-status-warning mr-1">
+                  Clinical Decision Support Only:
+                </strong>
+                Not a standalone diagnostic or treatment authority. Digital Twin trajectories and spike predictions are probabilistic machine learning estimates. Independent medical judgment is required.
+              </p>
+            </aside>
 
-          <Outlet />
+            {/* View container */}
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
         </main>
       </div>
     </div>

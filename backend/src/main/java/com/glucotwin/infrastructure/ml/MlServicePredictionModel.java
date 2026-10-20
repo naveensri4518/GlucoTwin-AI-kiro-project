@@ -1,6 +1,5 @@
 package com.glucotwin.infrastructure.ml;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.glucotwin.domain.prediction.*;
 import com.glucotwin.domain.twin.TwinStateSnapshot;
 import com.glucotwin.infrastructure.config.GlucoTwinProperties;
@@ -25,13 +24,17 @@ import java.util.Map;
 public class MlServicePredictionModel implements PredictionModelPort {
 
     private final GlucoTwinProperties properties;
-    private final ObjectMapper objectMapper;
     private RestClient restClient;
     private volatile String cachedModelVersion = "unknown";
 
     @PostConstruct
     void init() {
+        var requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout((int) java.time.Duration.ofSeconds(properties.getMlService().getConnectTimeoutSeconds()).toMillis());
+        requestFactory.setReadTimeout((int) java.time.Duration.ofSeconds(properties.getMlService().getReadTimeoutSeconds()).toMillis());
+
         restClient = RestClient.builder()
+                .requestFactory(requestFactory)
                 .baseUrl(properties.getMlService().getUrl())
                 .defaultHeader("X-Internal-Token", properties.getMlService().getInternalToken())
                 .build();

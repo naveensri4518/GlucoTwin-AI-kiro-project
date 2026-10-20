@@ -8,14 +8,18 @@ export interface PatientSummary {
   createdAt: string // ISO-8601 UTC
 }
 
-/** Spring Page<T> envelope */
+/** Spring Page<T> envelope — supports both standard Spring Boot PageImpl and nested page envelope */
 export interface Page<T> {
   content: T[]
-  page: {
-    size: number
-    number: number
-    totalElements: number
-    totalPages: number
+  totalElements?: number
+  totalPages?: number
+  size?: number
+  number?: number
+  page?: {
+    size?: number
+    number?: number
+    totalElements?: number
+    totalPages?: number
   }
 }
 

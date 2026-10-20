@@ -5,7 +5,7 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/glucotwin}
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/glucotwin}
     username: ${POSTGRES_USER:glucotwin}
     password: ${POSTGRES_PASSWORD:glucotwin}
     driver-class-name: org.postgresql.Driver
@@ -25,6 +25,33 @@ spring:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
       password: ${REDIS_PASSWORD:}
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+  # Phase 13: LLM explanation layer
+  # The API key must be supplied via environment variable — never hardcoded.
+  # Set OPENAI_API_KEY in your environment or .env file (not committed to VCS).
+  # By default, chat and other AI integrations are disabled (none) for local development.
+  ai:
+    model:
+      chat: ${AI_CHAT_MODEL:none}
+      audio:
+        speech: none
+        transcription: none
+      embedding: none
+      image: none
+      moderation: none
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${AI_EXPLANATION_MODEL:gpt-4o-mini}
+          temperature: ${AI_EXPLANATION_TEMPERATURE:0.2}
+          max-tokens: ${AI_EXPLANATION_MAX_TOKENS:400}
 
 server:
   port: 8080
@@ -59,22 +86,7 @@ glucotwin:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
   data:
     clinical-warning-threshold-mmol: ${CLINICAL_WARNING_THRESHOLD:20.0}
-
-# Phase 13: LLM explanation layer
-# The API key must be supplied via environment variable — never hardcoded.
-# Set OPENAI_API_KEY in your environment or .env file (not committed to VCS).
-spring:
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:}
-      chat:
-        options:
-          model: ${AI_EXPLANATION_MODEL:gpt-4o-mini}
-          temperature: ${AI_EXPLANATION_TEMPERATURE:0.2}
-          max-tokens: ${AI_EXPLANATION_MAX_TOKENS:400}
-
-glucotwin:
   ai:
     explanation:
-      enabled: ${AI_EXPLANATION_ENABLED:true}
+      enabled: ${AI_EXPLANATION_ENABLED:false}
       timeout-seconds: ${AI_EXPLANATION_TIMEOUT_SECONDS:5}

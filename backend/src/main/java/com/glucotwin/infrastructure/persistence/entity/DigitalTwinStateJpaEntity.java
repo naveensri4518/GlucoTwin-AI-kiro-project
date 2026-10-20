@@ -26,16 +26,16 @@ public class DigitalTwinStateJpaEntity {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Column(name = "glucose_reading")
+    @Column(name = "glucose_reading", columnDefinition = "numeric")
     private Double glucoseReading;
 
-    @Column(name = "heart_rate")
+    @Column(name = "heart_rate", columnDefinition = "numeric")
     private Double heartRate;
 
-    @Column(name = "hrv")
+    @Column(name = "hrv", columnDefinition = "numeric")
     private Double hrv;
 
-    @Column(name = "sleep_duration")
+    @Column(name = "sleep_duration", columnDefinition = "numeric")
     private Double sleepDuration;
 
     @Column(name = "sleep_stage", length = 10)

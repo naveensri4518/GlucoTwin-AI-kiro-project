@@ -36,16 +36,16 @@ public class SimulationResultJpaEntity {
     @Column(name = "scenario_inputs", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> scenarioInputs;
 
-    @Column(name = "spike_probability", nullable = false)
+    @Column(name = "spike_probability", nullable = false, columnDefinition = "numeric")
     private double spikeProbability;
 
     @Column(name = "risk_category", nullable = false, length = 20)
     private String riskCategory;
 
-    @Column(name = "ci_low", nullable = false)
+    @Column(name = "ci_low", nullable = false, columnDefinition = "numeric")
     private double ciLow;
 
-    @Column(name = "ci_high", nullable = false)
+    @Column(name = "ci_high", nullable = false, columnDefinition = "numeric")
     private double ciHigh;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -61,7 +61,7 @@ public class SimulationResultJpaEntity {
     @Column(name = "data_quality_warnings", columnDefinition = "TEXT[]")
     private String[] dataQualityWarnings;
 
-    @Column(name = "delta_vs_baseline")
+    @Column(name = "delta_vs_baseline", columnDefinition = "numeric")
     private Double deltaVsBaseline;
 
     @Column(name = "simulated_at", nullable = false)

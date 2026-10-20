@@ -51,6 +51,7 @@ dependencies {
 
     // Database
     implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql:10.10.0")
     runtimeOnly("org.postgresql:postgresql")
 
     // Observability

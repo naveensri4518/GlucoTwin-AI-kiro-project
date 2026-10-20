@@ -17,6 +17,7 @@ import java.util.Map;
 @Slf4j
 public class RedisWearableEventPublisher implements WearableEventPublisher {
 
+    public static final String STREAM_KEY = "glucotwin:wearable-events";
     private static final String STREAM_KEY_PREFIX = "glucotwin:wearable-events:";
 
     private final StringRedisTemplate redisTemplate;
@@ -41,6 +42,7 @@ public class RedisWearableEventPublisher implements WearableEventPublisher {
             fields.put("eventTimestamp", event.eventTimestamp().toString());
             if (traceId != null) fields.put("traceId", traceId);
 
+            redisTemplate.opsForStream().add(STREAM_KEY, fields);
             redisTemplate.opsForStream().add(streamKey, fields);
             log.debug("Published wearable event {} to Redis stream {}", event.eventId(), streamKey);
         } catch (Exception e) {
