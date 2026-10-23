@@ -69,6 +69,22 @@ export function EnrollPatientModal({ isOpen, onClose, onSuccess }: EnrollPatient
 
       await api.post(`/api/v1/patients/${patientId}/ehr`, payload)
 
+      // Ingest initial baseline wearable observation so the twin dynamic layer has valid telemetry
+      try {
+        await api.post(`/api/v1/patients/${patientId}/wearable-events`, {
+          glucoseReading: parsedFasting,
+          heartRate: 72.0,
+          hrv: 45.0,
+          sleepDuration: 7.5,
+          sleepStage: 'LIGHT',
+          stepCount: 2500,
+          activityLevel: 'LIGHT',
+          eventTimestamp: new Date(Date.now() - 2000).toISOString(),
+        })
+      } catch {
+        // Wearable baseline initialization is non-fatal if streaming pipeline catches it subsequently
+      }
+
       // Refresh patients cache
       await queryClient.invalidateQueries({ queryKey: PATIENTS_QUERY_KEY })
 

@@ -5,34 +5,29 @@
 ---
 
 ## 👥 Team & Institution Details
-Institution: Karpagam Institute of Technology, Coimbatore, Tamil Nadu, India
-Project: GlucoTwin AI — AI-Powered Digital Twin for Type 2 Diabetes
 
-🏆 Team Leader
+- **Institution:** Karpagam Institute of Technology, Coimbatore, Tamil Nadu, India
+- **Project:** GlucoTwin AI — AI-Powered Digital Twin for Type 2 Diabetes
+- **GitHub Repository:** [https://github.com/naveensri4518/GlucoTwin-AI-kiro-project](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project)
+- **Team Size:** 3 Members
 
-Praveen Raj Thulasi S
+### 🏆 Team Leader
+- **Praveen Raj Thulasi S**
+  - **Department:** Electronics and Communication Engineering (ECE)
+  - **Role:** Team Leader & Backend / Full-Stack Developer
+  - **Responsibilities:** Backend architecture, API development, system integration, and application functionality.
 
-Department: Electronics and Communication Engineering (ECE)
-Role: Team Leader & Backend / Full-Stack Developer
-Responsibilities: Backend architecture, API development, system integration, and application functionality.
-💻 Team Members
+### 💻 Team Members
+- **NaveenSri V**
+  - **Department:** Electronics and Communication Engineering (ECE)
+  - **Role:** Full-Stack Developer & Machine Learning Integration
+  - **Responsibilities:** Full-stack development, digital twin state engine, ML pipeline integration, and system architecture.
 
-1. NaveenSri V
+- **Gopika B**
+  - **Department:** Computer Science and Engineering (CSE)
+  - **Role:** Frontend Development, Database & Testing
+  - **Responsibilities:** User interface development, database integration, application testing, and quality assurance.
 
-Department: Electronics and Communication Engineering (ECE)
-Role: Full-Stack Developer & Machine Learning Integration
-Responsibilities: Full-stack development, digital twin state engine, ML pipeline integration, and system architecture.
-
-2. Gopika B
-
-Department: Computer Science and Engineering (CSE)
-Role: Frontend Development, Database & Testing
-Responsibilities: User interface development, database integration, application testing, and quality assurance.
-
-🔗 Project Information
-GitHub Repository: https://github.com/naveensri4518/GlucoTwin-AI-kiro-project
-Team Size: 3 Members
-Institution: Karpagam Institute of Technology
 ---
 
 ## 🎯 Problem Statement
@@ -83,29 +78,29 @@ GlucoTwin AI solves this problem by maintaining an individual **Physiological Di
 
 | Deliverable | Format | Repository File Link |
 | :--- | :--- | :--- |
-| **Architecture Diagram** | PDF (Vector) | [docs/submission/GLUCOTWIN_AI_ARCHITECTURE_DIAGRAM.pdf](docs/submission/GLUCOTWIN_AI_ARCHITECTURE_DIAGRAM.pdf) |
-| **Project Presentation** | PDF (Slide Deck) | [docs/submission/GLUCOTWIN_AI_PRESENTATION.pdf](docs/submission/GLUCOTWIN_AI_PRESENTATION.pdf) |
-| **Project Presentation** | PPTX (Editable) | [docs/submission/GLUCOTWIN_AI_PRESENTATION.pptx](docs/submission/GLUCOTWIN_AI_PRESENTATION.pptx) |
-| **Demo Video Script & Guide** | Markdown | [[docs/submission/DEMO_VIDEO_SCRIPT.md](docs/submission/DEMO_VIDEO_SCRIPT.md)](https://youtu.be/in5hMC_gO3M) |
-| **System Architecture Guide** | Markdown | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| **Complete Testing Report** | Markdown | [TESTING.md](TESTING.md) |
-| **Live Evaluator Demo Guide**| Markdown | [DEMO_GUIDE.md](DEMO_GUIDE.md) |
-| **Open-Source License** | MIT | [LICENSE](LICENSE) |
+| **Architecture Diagram** | PDF (Vector) | [docs/submission/GLUCOTWIN_AI_ARCHITECTURE_DIAGRAM.pdf](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/docs/submission/GLUCOTWIN_AI_ARCHITECTURE_DIAGRAM.pdf) |
+| **Project Presentation** | PDF (Slide Deck) | [docs/submission/GLUCOTWIN_AI_PRESENTATION.pdf](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/docs/submission/GLUCOTWIN_AI_PRESENTATION.pdf) |
+| **Project Presentation** | PPTX (Editable) | [docs/submission/GLUCOTWIN_AI_PRESENTATION.pptx](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/docs/submission/GLUCOTWIN_AI_PRESENTATION.pptx) |
+| **Demo Video Script & Guide** | Markdown | [docs/submission/DEMO_VIDEO_SCRIPT.md](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/docs/submission/DEMO_VIDEO_SCRIPT.md) |
+| **System Architecture Guide** | Markdown | [ARCHITECTURE.md](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/ARCHITECTURE.md) |
+| **Complete Testing Report** | Markdown | [TESTING.md](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/TESTING.md) |
+| **Live Evaluator Demo Guide** | Markdown | [DEMO_GUIDE.md](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/DEMO_GUIDE.md) |
+| **Open-Source License** | MIT | [LICENSE](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/LICENSE) |
 
 ---
 
 ## 🎥 Demonstration Video (15–20 Minutes)
 
-- **Video Hosting:** YouTube (https://youtu.be/in5hMC_gO3M)
-- **Demo Video URL:** *[https://youtu.be/in5hMC_gO3M]*
-- **Video Recording Guide:** See [docs/submission/DEMO_VIDEO_SCRIPT.md](docs/submission/DEMO_VIDEO_SCRIPT.md) for the exact minute-by-minute speaking script, screen actions, and recording checklist.
+- **Video Hosting:** YouTube (Unlisted)
+- **Demo Video URL:** **[https://youtu.be/in5hMC_gO3M](https://youtu.be/in5hMC_gO3M)**
+- **Video Recording Guide:** See [docs/submission/DEMO_VIDEO_SCRIPT.md](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/docs/submission/DEMO_VIDEO_SCRIPT.md) for the exact minute-by-minute speaking script, screen actions, and recording checklist.
 
 ---
 
 ## 📜 Open-Source License
 
 GlucoTwin AI is licensed under the permissive **MIT License**.  
-See the full text in [LICENSE](LICENSE).
+See the full text in [LICENSE](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/LICENSE).
 
 ---
 
@@ -159,7 +154,7 @@ All test suites across the stack pass with 100% success:
 - **Backend Executable JAR:** **BUILD SUCCESSFUL** (`.\gradlew.bat bootJar`)
 - **End-to-End Workflow Verification:** **7 / 7 core workflows passed** (`python verify_core_workflows.py`)
 
-See [TESTING.md](TESTING.md) for complete execution logs.
+See [TESTING.md](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project/blob/master/TESTING.md) for complete execution logs.
 
 ---
 
