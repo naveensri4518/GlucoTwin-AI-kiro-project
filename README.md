@@ -5,14 +5,34 @@
 ---
 
 ## 👥 Team & Institution Details
+Institution: Karpagam Institute of Technology, Coimbatore, Tamil Nadu, India
+Project: GlucoTwin AI — AI-Powered Digital Twin for Type 2 Diabetes
 
-- **Institution:** Karpagam Institute of Technology, Coimbatore, Tamil Nadu, India
-- **Department:** Computer Science & Engineering / Information Technology
-- **Repository:** [https://github.com/naveensri4518/GlucoTwin-AI-kiro-project](https://github.com/naveensri4518/GlucoTwin-AI-kiro-project)
-- **Team Lead & Primary Developer:** **NAVEENSRI V** (Full-Stack Architecture, ML Pipeline & Digital Twin State Engine)
-- **Contact:** naveensri4518@gmail.com
-- **Team Members:** *(Collaborative multi-member submission — see submission form for finalized member roster)*
+🏆 Team Leader
 
+Praveen Raj Thulasi S
+
+Department: Electronics and Communication Engineering (ECE)
+Role: Team Leader & Backend / Full-Stack Developer
+Responsibilities: Backend architecture, API development, system integration, and application functionality.
+💻 Team Members
+
+1. NaveenSri V
+
+Department: Electronics and Communication Engineering (ECE)
+Role: Full-Stack Developer & Machine Learning Integration
+Responsibilities: Full-stack development, digital twin state engine, ML pipeline integration, and system architecture.
+
+2. Gopika B
+
+Department: Computer Science and Engineering (CSE)
+Role: Frontend Development, Database & Testing
+Responsibilities: User interface development, database integration, application testing, and quality assurance.
+
+🔗 Project Information
+GitHub Repository: https://github.com/naveensri4518/GlucoTwin-AI-kiro-project
+Team Size: 3 Members
+Institution: Karpagam Institute of Technology
 ---
 
 ## 🎯 Problem Statement
@@ -66,7 +86,7 @@ GlucoTwin AI solves this problem by maintaining an individual **Physiological Di
 | **Architecture Diagram** | PDF (Vector) | [docs/submission/GLUCOTWIN_AI_ARCHITECTURE_DIAGRAM.pdf](docs/submission/GLUCOTWIN_AI_ARCHITECTURE_DIAGRAM.pdf) |
 | **Project Presentation** | PDF (Slide Deck) | [docs/submission/GLUCOTWIN_AI_PRESENTATION.pdf](docs/submission/GLUCOTWIN_AI_PRESENTATION.pdf) |
 | **Project Presentation** | PPTX (Editable) | [docs/submission/GLUCOTWIN_AI_PRESENTATION.pptx](docs/submission/GLUCOTWIN_AI_PRESENTATION.pptx) |
-| **Demo Video Script & Guide** | Markdown | [docs/submission/DEMO_VIDEO_SCRIPT.md](docs/submission/DEMO_VIDEO_SCRIPT.md) |
+| **Demo Video Script & Guide** | Markdown | [[docs/submission/DEMO_VIDEO_SCRIPT.md](docs/submission/DEMO_VIDEO_SCRIPT.md)](https://youtu.be/in5hMC_gO3M) |
 | **System Architecture Guide** | Markdown | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | **Complete Testing Report** | Markdown | [TESTING.md](TESTING.md) |
 | **Live Evaluator Demo Guide**| Markdown | [DEMO_GUIDE.md](DEMO_GUIDE.md) |
@@ -76,8 +96,8 @@ GlucoTwin AI solves this problem by maintaining an individual **Physiological Di
 
 ## 🎥 Demonstration Video (15–20 Minutes)
 
-- **Video Hosting:** YouTube (**UNLISTED**)
-- **Demo Video URL:** *[ACTION REQUIRED: Upload your 15–20 min screen recording to YouTube as Unlisted and paste URL here]*
+- **Video Hosting:** YouTube (https://youtu.be/in5hMC_gO3M)
+- **Demo Video URL:** *[https://youtu.be/in5hMC_gO3M]*
 - **Video Recording Guide:** See [docs/submission/DEMO_VIDEO_SCRIPT.md](docs/submission/DEMO_VIDEO_SCRIPT.md) for the exact minute-by-minute speaking script, screen actions, and recording checklist.
 
 ---
